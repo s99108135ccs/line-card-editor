@@ -1843,94 +1843,43 @@ async function initLiff(){
   }
 }
 
-// 頁面載入時，檢查是否有待發送的訊息（URL hash 帶資料 or 登入後回來）
+// 頁面載入時，檢查是否有待發送的訊息（登入後回來）
 window.addEventListener('load', async function(){
-(async function checkPendingLiffMsg(){
   try{
-    // 等 LIFF SDK 載入完成
+    // 等 LIFF SDK 載入
     let waited = 0;
-    while(typeof liff === 'undefined' && waited < 5000){
-      await new Promise(r=>setTimeout(r,100));
-      waited += 100;
+    while(typeof liff === 'undefined' && waited < 8000){
+      await new Promise(r=>setTimeout(r,200));
+      waited += 200;
     }
-    if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入');
+    if(typeof liff === 'undefined') return; // 沒有 LIFF 就算了
+
     await initLiff();
-    
-    // 優先讀 URL 裡的 bin 參數（電腦生成，手機掃碼進來）
-    const urlParams = new URLSearchParams(location.search);
-    const binId = urlParams.get('bin');
-    if(binId){
-      if(!liff.isLoggedIn()){
-        sessionStorage.setItem('pending_bin', binId);
-        liff.login({ redirectUri: location.href });
-        return;
-      }
-      // 從 JSONbin 讀取 Flex Message
-      toast('⏳ 讀取名片資料...');
-      const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
-      const pendingBin = binId || sessionStorage.getItem('pending_bin');
-      sessionStorage.removeItem('pending_bin');
-      const binRes = await fetch(`https://api.jsonbin.io/v3/b/${pendingBin}/latest`, {
-        headers: { 'X-Access-Key': JSONBIN_KEY }
-      });
-      if(!binRes.ok) throw new Error('讀取資料失敗');
-      const binData = await binRes.json();
-      const msg = binData.record.msg;
-      if(liff.isApiAvailable('shareTargetPicker')){
-        toast('📤 開啟 LINE 分享...');
-        const result = await liff.shareTargetPicker([msg]);
-        if(result){ toast('✅ 名片已發送！'); }
-        else { toast('ℹ️ 已取消分享'); }
-      }
-      return;
-    }
-    
-    // 登入後回來，檢查是否有待處理的 bin ID
-    if(liff.isLoggedIn()){
-      const pendingBin = sessionStorage.getItem('pending_bin');
-      if(pendingBin){
-        sessionStorage.removeItem('pending_bin');
-        toast('⏳ 讀取名片資料...');
-        const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
-        const binRes = await fetch(`https://api.jsonbin.io/v3/b/${pendingBin}/latest`, {
-          headers: { 'X-Access-Key': JSONBIN_KEY }
-        });
-        if(!binRes.ok) throw new Error('讀取資料失敗');
-        const binData = await binRes.json();
-        const msg = binData.record.msg;
-        if(liff.isApiAvailable('shareTargetPicker')){
-          toast('📤 開啟 LINE 分享...');
-          const result = await liff.shareTargetPicker([msg]);
-          if(result){ toast('✅ 名片已發送！'); }
-          else { toast('ℹ️ 已取消分享'); }
-        }
-        return;
-      }
-    }
-    
-    // 登入後回來有待發訊息（sessionStorage）
-    if(liff.isLoggedIn()){
-      const pending = sessionStorage.getItem(LIFF_MSG_KEY);
-      if(!pending) return;
-      sessionStorage.removeItem(LIFF_MSG_KEY);
-      const msg = JSON.parse(pending);
-      if(!liff.isApiAvailable('shareTargetPicker')) return;
-      toast('📤 開啟 LINE 分享...');
-      const result = await liff.shareTargetPicker([msg]);
-      if(result){ toast('✅ 名片已發送！'); }
-      else { toast('ℹ️ 已取消分享'); }
-    }
-  } catch(e){ console.warn('pending msg check failed', e); }
-})();
+    if(!liff.isLoggedIn()) return;
+
+    // 登入後有待發訊息
+    const pending = sessionStorage.getItem(LIFF_MSG_KEY);
+    if(!pending) return;
+    sessionStorage.removeItem(LIFF_MSG_KEY);
+    const msg = JSON.parse(pending);
+    if(!liff.isApiAvailable('shareTargetPicker')) return;
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
+  } catch(e){ console.warn('LIFF init failed (non-critical):', e.message); }
 });
+
 
 async function openOrig(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
   toast('⏳ 準備中...');
   try{
+    // 1. 合成圖片
     const heroDataUrls = await Promise.all(G.cards.map(card=>composeHero(card)));
     let finalUrls = heroDataUrls;
 
+    // 2. 上傳圖片到 ImgBB
     if(apiKey){
       toast('⏳ 上傳圖片中...');
       finalUrls = await Promise.all(heroDataUrls.map(async (url,i)=>{
@@ -1943,7 +1892,7 @@ async function openOrig(){
       await new Promise(r=>setTimeout(r,1800));
     }
 
-    // 建立 Flex Message
+    // 3. 建立 Flex Message
     const flexMsg = buildJson(finalUrls);
     const msg = {
       type: 'flex',
@@ -1951,90 +1900,30 @@ async function openOrig(){
       contents: flexMsg.contents
     };
 
-    // 嘗試用 LIFF（在手機LINE裡直接發送）
-    try{
-      await initLiff();
-      if(liff.isLoggedIn() && liff.isApiAvailable('shareTargetPicker')){
-        toast('📤 開啟 LINE 分享...');
-        const result = await liff.shareTargetPicker([msg]);
-        if(result){ toast('✅ 名片已發送！'); }
-        else { toast('ℹ️ 已取消分享'); }
-        return;
-      }
-    } catch(liffErr){ console.warn('LIFF direct share failed:', liffErr); }
+    // 4. 初始化 LIFF
+    toast('⏳ 連接 LINE...');
+    await initLiff();
 
-    // 電腦環境：上傳到 JSONbin，QR code 只帶短 ID
-    toast('⏳ 上傳名片資料...');
-    const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
-    const binRes = await fetch('https://api.jsonbin.io/v3/b', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Key': JSONBIN_KEY,
-        'X-Bin-Name': 'line-card-' + Date.now(),
-        'X-Bin-Private': 'false'
-      },
-      body: JSON.stringify({ msg })
-    });
-    if(!binRes.ok) throw new Error('JSONbin 上傳失敗 ' + binRes.status);
-    const binData = await binRes.json();
-    const binId = binData.metadata.id;
-    const shareUrl = `https://liff.line.me/${LIFF_ID}?bin=${binId}`;
-    showShareQR(shareUrl, msg);
+    // 5. 未登入 → 先存訊息，跳去登入，登入後回來繼續
+    if(!liff.isLoggedIn()){
+      sessionStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    // 6. 已登入 → 直接發送
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      throw new Error('此環境不支援 shareTargetPicker');
+    }
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
 
   } catch(err){
     console.error(err);
     toast('❌ 失敗：'+err.message);
   }
-}
-
-function showShareQR(shareUrl, msg){
-  document.getElementById('share-qr-overlay')?.remove();
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(shareUrl)}`;
-  const overlay = document.createElement('div');
-  overlay.id = 'share-qr-overlay';
-  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-family:inherit;`;
-  overlay.innerHTML = `
-    <div style="background:#fff;border-radius:24px;padding:32px;max-width:380px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;position:relative">
-      <button onclick="document.getElementById('share-qr-overlay').remove()"
-        style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:#ccc">✕</button>
-      <div style="font-size:28px;margin-bottom:8px">📱</div>
-      <div style="font-size:18px;font-weight:800;color:#00b900;margin-bottom:4px">用手機 LINE 掃碼</div>
-      <div style="font-size:13px;color:#888;margin-bottom:20px">掃完後直接選聯絡人發送，<br>圖片已上傳完成免等待</div>
-      <img src="${qrUrl}" style="width:240px;height:240px;border-radius:12px;border:2px solid #eee">
-      <div style="margin-top:16px;background:#f0f8f0;border-radius:10px;padding:10px 14px;font-size:12px;color:#00b900;font-weight:600">
-        ✅ 圖片已上傳 ImgBB，手機直接發送即可
-      </div>
-      <button onclick="navigator.clipboard.writeText('${shareUrl}');this.textContent='✅ 已複製！';setTimeout(()=>this.textContent='📋 複製連結',1500)"
-        style="margin-top:12px;width:100%;padding:12px;background:#00b900;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 複製連結到手機開啟</button>
-    </div>
-  `;
-  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-}
-
-function showLiffQR(){
-  document.getElementById('liff-qr-overlay')?.remove();
-  const liffUrl = `https://liff.line.me/${LIFF_ID}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(liffUrl)}`;
-  const overlay = document.createElement('div');
-  overlay.id = 'liff-qr-overlay';
-  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);font-family:inherit;`;
-  overlay.innerHTML = `
-    <div style="background:#fff;border-radius:20px;padding:32px 36px;max-width:380px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;position:relative">
-      <button onclick="document.getElementById('liff-qr-overlay').remove()"
-        style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">✕</button>
-      <div style="font-size:20px;font-weight:800;color:#00b900;margin-bottom:6px">📱 用手機掃描發送</div>
-      <div style="font-size:13px;color:#888;margin-bottom:20px">用 LINE app 掃描下方 QR code，<br>即可直接分享名片到 LINE 聊天室</div>
-      <img src="${qrUrl}" style="width:220px;height:220px;border-radius:12px;border:2px solid #e8e8e8">
-      <div style="margin-top:16px;font-size:12px;color:#aaa">或複製連結在手機 LINE 開啟：</div>
-      <div style="margin-top:6px;background:#f5f5f5;border-radius:8px;padding:8px 12px;font-size:12px;word-break:break-all;color:#555">${liffUrl}</div>
-      <button onclick="navigator.clipboard.writeText('${liffUrl}');this.textContent='✅ 已複製！';setTimeout(()=>this.textContent='📋 複製連結',1500)"
-        style="margin-top:12px;width:100%;padding:11px;background:#00b900;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 複製連結</button>
-    </div>
-  `;
-  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
 }
 
 function toJson5(obj){
