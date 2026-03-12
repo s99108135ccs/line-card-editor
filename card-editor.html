@@ -294,6 +294,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .av-draggable-wrap.av-selected .av-ctrl-box{display:block}
 .av-h{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid #0078ff;z-index:30;pointer-events:all}
 </style>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
@@ -1805,155 +1806,100 @@ function buildTaichunminJson(heroUrls){
   };
 }
 
-function openOrig(){
-  const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
-  toast('⏳ 準備中...');
-  Promise.all(G.cards.map(card=>composeHero(card))).then(async heroDataUrls=>{
-    try{
-      let finalUrls = heroDataUrls;
-      if(apiKey){
-        toast('⏳ 上傳圖片中...');
-        finalUrls = await Promise.all(heroDataUrls.map(async (url,i)=>{
-          if(!url || !url.startsWith('data:')) return url;
-          toast(`⏳ 上傳第 ${i+1} 張...`);
-          return await uploadToImgBB(url, apiKey);
-        }));
-      } else if(heroDataUrls.some(u=>u&&u.startsWith('data:'))){
-        toast('⚠️ 圖片未上傳（未填 ImgBB Key），LINE 將無法顯示圖片');
-        await new Promise(r=>setTimeout(r,1800));
-      }
+const LIFF_ID = '2009436722-KlVkAIhF';
+let liffReady = false;
 
-      const json5payload = buildTaichunminJson(finalUrls);
-      const lsValue = toJson5({
-        altText: G.altText || '請在手機上查看數位版名片。',
-        page: 0,
-        type: 'flex',
-        contents: buildJson(finalUrls).contents,
-        json5: json5payload,
-      });
-
-      // 複製到剪貼簿
-      window._lastLsValue = lsValue;
-      await navigator.clipboard.writeText(lsValue);
-
-      // 開啟 taichunmin
-      const TARGET = 'https://taichunmin.idv.tw/liff-businesscard/forms/line-carousel-1.html';
-      window.open(TARGET, '_blank');
-
-      // 顯示步驟提示 overlay
-      showPublishGuide();
-
-    } catch(err){
-      console.error(err);
-      toast('❌ 失敗：'+err.message);
-    }
-  });
+async function initLiff(){
+  if(liffReady) return;
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    liffReady = true;
+  } catch(e){
+    throw new Error('LIFF 初始化失敗：' + e.message);
+  }
 }
 
-function showPublishGuide(){
-  document.getElementById('publish-overlay')?.remove();
-  // 同時在剪貼簿狀態列顯示大型中間 modal
+async function openOrig(){
+  const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
+  toast('⏳ 準備中...');
+  try{
+    const heroDataUrls = await Promise.all(G.cards.map(card=>composeHero(card)));
+    let finalUrls = heroDataUrls;
+
+    if(apiKey){
+      toast('⏳ 上傳圖片中...');
+      finalUrls = await Promise.all(heroDataUrls.map(async (url,i)=>{
+        if(!url || !url.startsWith('data:')) return url;
+        toast(`⏳ 上傳第 ${i+1} 張...`);
+        return await uploadToImgBB(url, apiKey);
+      }));
+    } else if(heroDataUrls.some(u=>u&&u.startsWith('data:'))){
+      toast('⚠️ 圖片未上傳（未填 ImgBB Key），LINE 將無法顯示圖片');
+      await new Promise(r=>setTimeout(r,1800));
+    }
+
+    // 建立 Flex Message
+    const flexMsg = buildJson(finalUrls);
+    const msg = {
+      type: 'flex',
+      altText: G.altText || '請在手機上查看數位版名片。',
+      contents: flexMsg.contents
+    };
+
+    toast('⏳ 連接 LINE...');
+    await initLiff();
+
+    if(!liff.isLoggedIn()){
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      throw new Error('此環境不支援 shareTargetPicker，請在 LINE app 內開啟');
+    }
+
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+
+    if(result){
+      toast('✅ 名片已發送！');
+    } else {
+      toast('ℹ️ 已取消分享');
+    }
+
+  } catch(err){
+    console.error(err);
+    // 如果不在LINE環境內，改用舊的方式（複製+開啟taichunmin）
+    if(err.message && (err.message.includes('not available') || err.message.includes('shareTargetPicker') || err.message.includes('LIFF'))){
+      toast('💡 請用手機 LINE 掃描 QR code 使用此功能');
+      showLiffQR();
+    } else {
+      toast('❌ 失敗：'+err.message);
+    }
+  }
+}
+
+function showLiffQR(){
+  document.getElementById('liff-qr-overlay')?.remove();
+  const liffUrl = `https://liff.line.me/${LIFF_ID}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(liffUrl)}`;
   const overlay = document.createElement('div');
-  overlay.id = 'publish-overlay';
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
-    display:flex;align-items:center;justify-content:center;
-    backdrop-filter:blur(3px);font-family:inherit;
-  `;
-  overlay.innerHTML = \`
-    <div style="background:#fff;border-radius:20px;padding:32px 36px;max-width:480px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.3);position:relative">
-      <button onclick="document.getElementById('publish-overlay').remove()"
-        style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:#bbb;line-height:1">✕</button>
-      <div style="font-size:22px;font-weight:800;color:#00b900;margin-bottom:4px">✅ JSON 已複製！</div>
-      <div style="font-size:13px;color:#888;margin-bottom:24px">接下來照以下步驟操作，約 1 分鐘完成</div>
-
-      <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px">
-        <div style="display:flex;gap:14px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:50%;background:#00b900;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:2px">在剛開的頁面，點右上角「匯出匯入」</div>
-            <div style="font-size:12px;color:#888">頁面右上方有個按鈕，點它展開選單</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:14px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:50%;background:#00b900;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:2px">點「匯入」→ 在框框裡貼上（Cmd+V）→ 點匯入</div>
-            <div style="font-size:12px;color:#888">資料已在剪貼簿，直接貼上就好</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:14px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:50%;background:#00b900;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:2px">點「建立名片」→ 用手機 LINE 掃 QR code</div>
-            <div style="font-size:12px;color:#888">在 LINE 裡面才能真正發送名片</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px">
-        <button onclick="
-          navigator.clipboard.writeText(window._lastLsValue||'');
-          this.textContent='✅ 已重新複製！';
-          setTimeout(()=>this.textContent='📋 重新複製資料',2000);
-        " style="flex:1;padding:12px;background:#f0f8f0;border:1.5px solid #00b900;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#00b900;font-family:inherit">📋 重新複製資料</button>
-        <button onclick="
-          const t='https://taichunmin.idv.tw/liff-businesscard/forms/line-carousel-1.html';
-          window.open(t,'_blank');
-        " style="flex:1;padding:12px;background:#00b900;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#fff;font-family:inherit">重新開啟頁面 ↗</button>
-      </div>
-      <div style="margin-top:12px;text-align:center;font-size:11px;color:#bbb">點任意空白處關閉此提示</div>
-    </div>
-  \`;
-  overlay.addEventListener('click', e => {
-    if(e.target === overlay) overlay.remove();
-  });
-  document.body.appendChild(overlay);
-
-  const overlay = document.createElement('div');
-  overlay.id = 'publish-overlay';
-  overlay.style.cssText = `
-    position:fixed;bottom:24px;right:24px;z-index:9999;
-    background:#fff;border-radius:16px;padding:20px 24px;
-    box-shadow:0 8px 32px rgba(0,0,0,.18);
-    border:2px solid #00b900;
-    width:300px;font-family:inherit;
-  `;
+  overlay.id = 'liff-qr-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);font-family:inherit;`;
   overlay.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-weight:700;font-size:15px;color:#1a1a1a">📋 資料已複製！</div>
-      <button onclick="document.getElementById('publish-overlay').remove()"
-        style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa;padding:0;line-height:1">✕</button>
+    <div style="background:#fff;border-radius:20px;padding:32px 36px;max-width:380px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;position:relative">
+      <button onclick="document.getElementById('liff-qr-overlay').remove()"
+        style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">✕</button>
+      <div style="font-size:20px;font-weight:800;color:#00b900;margin-bottom:6px">📱 用手機掃描發送</div>
+      <div style="font-size:13px;color:#888;margin-bottom:20px">用 LINE app 掃描下方 QR code，<br>即可直接分享名片到 LINE 聊天室</div>
+      <img src="${qrUrl}" style="width:220px;height:220px;border-radius:12px;border:2px solid #e8e8e8">
+      <div style="margin-top:16px;font-size:12px;color:#aaa">或複製連結在手機 LINE 開啟：</div>
+      <div style="margin-top:6px;background:#f5f5f5;border-radius:8px;padding:8px 12px;font-size:12px;word-break:break-all;color:#555">${liffUrl}</div>
+      <button onclick="navigator.clipboard.writeText('${liffUrl}');this.textContent='✅ 已複製！';setTimeout(()=>this.textContent='📋 複製連結',1500)"
+        style="margin-top:12px;width:100%;padding:11px;background:#00b900;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 複製連結</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:24px;height:24px;border-radius:50%;background:#00b900;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div style="font-size:13px;color:#444;padding-top:3px">在剛開的頁面找「<b>匯出匯入</b>」按鈕</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:24px;height:24px;border-radius:50%;background:#00b900;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div style="font-size:13px;color:#444;padding-top:3px">點「匯入」→ <b>貼上</b>（Cmd+V）→ 確認</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:24px;height:24px;border-radius:50%;background:#00b900;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div style="font-size:13px;color:#444;padding-top:3px">用手機 LINE 掃描 QR Code 或開啟連結</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:24px;height:24px;border-radius:50%;background:#00b900;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
-        <div style="font-size:13px;color:#444;padding-top:3px">在 LINE app 裡按「<b>建立名片</b>」→ 取得分享連結 🎉</div>
-      </div>
-    </div>
-    <button onclick="
-      navigator.clipboard.writeText(window._lastLsValue||'');
-      this.textContent='✅ 重新複製了！';
-      setTimeout(()=>this.textContent='📋 重新複製資料',1500);
-    " style="
-      margin-top:14px;width:100%;padding:10px;
-      background:#f0f8f0;border:1.5px solid #00b900;
-      border-radius:8px;cursor:pointer;font-size:13px;
-      font-weight:600;color:#00b900;font-family:inherit
-    ">📋 重新複製資料</button>
   `;
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
 
