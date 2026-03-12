@@ -293,6 +293,22 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .av-ctrl-box{position:absolute;inset:-1px;border:1px dashed rgba(0,120,255,.9);pointer-events:none;display:none}
 .av-draggable-wrap.av-selected .av-ctrl-box{display:block}
 .av-h{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid #0078ff;z-index:30;pointer-events:all}
+
+/* ── 手機版 RWD ── */
+@media (max-width: 768px){
+  .sidebar{ width:100% !important; }
+  .preview-panel{ display:none !important; }
+  #publish-bar{
+    width:100% !important;
+    left:0 !important;
+    right:0 !important;
+    padding:10px 16px !important;
+    flex-direction:column !important;
+    gap:8px !important;
+  }
+  #publish-bar button{ width:100% !important; }
+  .topbar{ padding:0 12px !important; }
+}
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -1812,6 +1828,13 @@ let liffReady = false;
 
 async function initLiff(){
   if(liffReady) return;
+  // 等 SDK 載入
+  let waited = 0;
+  while(typeof liff === 'undefined' && waited < 5000){
+    await new Promise(r=>setTimeout(r,100));
+    waited += 100;
+  }
+  if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入，請檢查網路');
   try{
     await liff.init({ liffId: LIFF_ID });
     liffReady = true;
@@ -1820,38 +1843,42 @@ async function initLiff(){
   }
 }
 
-// 頁面載入時，檢查是否有待發送的訊息（手機掃碼進來 or 登入後回來）
+// 頁面載入時，檢查是否有待發送的訊息（URL hash 帶資料 or 登入後回來）
 (async function checkPendingLiffMsg(){
   try{
-    const urlParams = new URLSearchParams(location.search);
-    const isShareMode = urlParams.get('share') === '1';
-    
+    // 等 LIFF SDK 載入完成
+    let waited = 0;
+    while(typeof liff === 'undefined' && waited < 5000){
+      await new Promise(r=>setTimeout(r,100));
+      waited += 100;
+    }
+    if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入');
     await initLiff();
     
-    // 如果是手機掃碼進來（share=1），且已登入
-    if(isShareMode && liff.isLoggedIn()){
-      // 從 localStorage 讀取電腦準備好的訊息
-      const pending = localStorage.getItem('liff_share_msg');
-      if(pending){
-        localStorage.removeItem('liff_share_msg');
-        const msg = JSON.parse(pending);
-        if(liff.isApiAvailable('shareTargetPicker')){
-          toast('📤 開啟 LINE 分享...');
-          const result = await liff.shareTargetPicker([msg]);
-          if(result){ toast('✅ 名片已發送！'); }
-          else { toast('ℹ️ 已取消分享'); }
-          return;
-        }
+    // 優先讀 URL hash 裡的 Flex Message（電腦生成，手機掃碼進來）
+    const hash = location.hash.slice(1);
+    if(hash && hash.startsWith('msg=')){
+      const b64 = hash.slice(4);
+      const msgStr = decodeURIComponent(escape(atob(b64)));
+      const msg = JSON.parse(msgStr);
+      
+      if(!liff.isLoggedIn()){
+        // 先存起來，登入後回來繼續
+        sessionStorage.setItem(LIFF_MSG_KEY, msgStr);
+        liff.login({ redirectUri: location.href });
+        return;
       }
-    }
-    
-    // 如果是 share 模式但還沒登入，先登入
-    if(isShareMode && !liff.isLoggedIn()){
-      liff.login({ redirectUri: location.href });
+      
+      if(liff.isApiAvailable('shareTargetPicker')){
+        toast('📤 開啟 LINE 分享...');
+        const result = await liff.shareTargetPicker([msg]);
+        if(result){ toast('✅ 名片已發送！'); }
+        else { toast('ℹ️ 已取消分享'); }
+      }
       return;
     }
     
-    // 登入後回來有待發訊息
+    // 登入後回來有待發訊息（sessionStorage）
     if(liff.isLoggedIn()){
       const pending = sessionStorage.getItem(LIFF_MSG_KEY);
       if(!pending) return;
@@ -1905,19 +1932,13 @@ async function openOrig(){
       }
     } catch(liffErr){ console.warn('LIFF direct share failed:', liffErr); }
 
-    // 電腦環境：把完整 Flex Message 壓縮進 URL，顯示 QR code 讓手機掃
+    // 電腦環境：把 Flex Message 編碼進 URL hash，QR code 掃碼後手機直接發送
     toast('⏳ 產生分享連結...');
     const msgStr = JSON.stringify(msg);
     const b64 = btoa(unescape(encodeURIComponent(msgStr)));
-    // 把資料存到 sessionStorage key，用 URL 帶 key 過去
-    const shareKey = 'share_' + Date.now();
-    sessionStorage.setItem(shareKey, msgStr);
-    // 同時存到 localStorage 以防手機掃碼時 session 不同
-    try{ localStorage.setItem('liff_share_msg', msgStr); } catch(e){}
-    
-    // 產生帶參數的 LIFF URL
-    const pageUrl = location.href.split('?')[0].split('#')[0];
-    const shareUrl = `https://liff.line.me/${LIFF_ID}?share=1`;
+    // LIFF 不支援 hash，改用 liff.state 參數帶資料
+    // 但 URL 有長度限制，先試 hash 方式（部分 LIFF 支援）
+    const shareUrl = `https://liff.line.me/${LIFF_ID}#msg=${b64}`;
     showShareQR(shareUrl, msg);
 
   } catch(err){
