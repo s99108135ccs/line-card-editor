@@ -1820,23 +1820,49 @@ async function initLiff(){
   }
 }
 
-// 頁面載入時，檢查是否有待發送的訊息（登入後回來）
+// 頁面載入時，檢查是否有待發送的訊息（手機掃碼進來 or 登入後回來）
 (async function checkPendingLiffMsg(){
   try{
+    const urlParams = new URLSearchParams(location.search);
+    const isShareMode = urlParams.get('share') === '1';
+    
     await initLiff();
-    if(!liff.isLoggedIn()) return;
-    const pending = sessionStorage.getItem(LIFF_MSG_KEY);
-    if(!pending) return;
-    sessionStorage.removeItem(LIFF_MSG_KEY);
-    const msg = JSON.parse(pending);
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      toast('⚠️ 請在 LINE app 內開啟以使用分享功能');
+    
+    // 如果是手機掃碼進來（share=1），且已登入
+    if(isShareMode && liff.isLoggedIn()){
+      // 從 localStorage 讀取電腦準備好的訊息
+      const pending = localStorage.getItem('liff_share_msg');
+      if(pending){
+        localStorage.removeItem('liff_share_msg');
+        const msg = JSON.parse(pending);
+        if(liff.isApiAvailable('shareTargetPicker')){
+          toast('📤 開啟 LINE 分享...');
+          const result = await liff.shareTargetPicker([msg]);
+          if(result){ toast('✅ 名片已發送！'); }
+          else { toast('ℹ️ 已取消分享'); }
+          return;
+        }
+      }
+    }
+    
+    // 如果是 share 模式但還沒登入，先登入
+    if(isShareMode && !liff.isLoggedIn()){
+      liff.login({ redirectUri: location.href });
       return;
     }
-    toast('📤 開啟 LINE 分享...');
-    const result = await liff.shareTargetPicker([msg]);
-    if(result){ toast('✅ 名片已發送！'); }
-    else { toast('ℹ️ 已取消分享'); }
+    
+    // 登入後回來有待發訊息
+    if(liff.isLoggedIn()){
+      const pending = sessionStorage.getItem(LIFF_MSG_KEY);
+      if(!pending) return;
+      sessionStorage.removeItem(LIFF_MSG_KEY);
+      const msg = JSON.parse(pending);
+      if(!liff.isApiAvailable('shareTargetPicker')) return;
+      toast('📤 開啟 LINE 分享...');
+      const result = await liff.shareTargetPicker([msg]);
+      if(result){ toast('✅ 名片已發送！'); }
+      else { toast('ℹ️ 已取消分享'); }
+    }
   } catch(e){ console.warn('pending msg check failed', e); }
 })();
 
@@ -1867,39 +1893,62 @@ async function openOrig(){
       contents: flexMsg.contents
     };
 
-    toast('⏳ 連接 LINE...');
-    await initLiff();
+    // 嘗試用 LIFF（在手機LINE裡直接發送）
+    try{
+      await initLiff();
+      if(liff.isLoggedIn() && liff.isApiAvailable('shareTargetPicker')){
+        toast('📤 開啟 LINE 分享...');
+        const result = await liff.shareTargetPicker([msg]);
+        if(result){ toast('✅ 名片已發送！'); }
+        else { toast('ℹ️ 已取消分享'); }
+        return;
+      }
+    } catch(liffErr){ console.warn('LIFF direct share failed:', liffErr); }
 
-    if(!liff.isLoggedIn()){
-      // 存訊息到 sessionStorage，登入後回來繼續發送
-      sessionStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
-      liff.login({ redirectUri: location.href });
-      return;
-    }
-
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      throw new Error('此環境不支援 shareTargetPicker，請在 LINE app 內開啟');
-    }
-
-    toast('📤 開啟 LINE 分享...');
-    const result = await liff.shareTargetPicker([msg]);
-
-    if(result){
-      toast('✅ 名片已發送！');
-    } else {
-      toast('ℹ️ 已取消分享');
-    }
+    // 電腦環境：把完整 Flex Message 壓縮進 URL，顯示 QR code 讓手機掃
+    toast('⏳ 產生分享連結...');
+    const msgStr = JSON.stringify(msg);
+    const b64 = btoa(unescape(encodeURIComponent(msgStr)));
+    // 把資料存到 sessionStorage key，用 URL 帶 key 過去
+    const shareKey = 'share_' + Date.now();
+    sessionStorage.setItem(shareKey, msgStr);
+    // 同時存到 localStorage 以防手機掃碼時 session 不同
+    try{ localStorage.setItem('liff_share_msg', msgStr); } catch(e){}
+    
+    // 產生帶參數的 LIFF URL
+    const pageUrl = location.href.split('?')[0].split('#')[0];
+    const shareUrl = `https://liff.line.me/${LIFF_ID}?share=1`;
+    showShareQR(shareUrl, msg);
 
   } catch(err){
     console.error(err);
-    // 如果不在LINE環境內，改用舊的方式（複製+開啟taichunmin）
-    if(err.message && (err.message.includes('not available') || err.message.includes('shareTargetPicker') || err.message.includes('LIFF'))){
-      toast('💡 請用手機 LINE 掃描 QR code 使用此功能');
-      showLiffQR();
-    } else {
-      toast('❌ 失敗：'+err.message);
-    }
+    toast('❌ 失敗：'+err.message);
   }
+}
+
+function showShareQR(shareUrl, msg){
+  document.getElementById('share-qr-overlay')?.remove();
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(shareUrl)}`;
+  const overlay = document.createElement('div');
+  overlay.id = 'share-qr-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-family:inherit;`;
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:24px;padding:32px;max-width:380px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;position:relative">
+      <button onclick="document.getElementById('share-qr-overlay').remove()"
+        style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;font-size:22px;color:#ccc">✕</button>
+      <div style="font-size:28px;margin-bottom:8px">📱</div>
+      <div style="font-size:18px;font-weight:800;color:#00b900;margin-bottom:4px">用手機 LINE 掃碼</div>
+      <div style="font-size:13px;color:#888;margin-bottom:20px">掃完後直接選聯絡人發送，<br>圖片已上傳完成免等待</div>
+      <img src="${qrUrl}" style="width:240px;height:240px;border-radius:12px;border:2px solid #eee">
+      <div style="margin-top:16px;background:#f0f8f0;border-radius:10px;padding:10px 14px;font-size:12px;color:#00b900;font-weight:600">
+        ✅ 圖片已上傳 ImgBB，手機直接發送即可
+      </div>
+      <button onclick="navigator.clipboard.writeText('${shareUrl}');this.textContent='✅ 已複製！';setTimeout(()=>this.textContent='📋 複製連結',1500)"
+        style="margin-top:12px;width:100%;padding:12px;background:#00b900;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 複製連結到手機開啟</button>
+    </div>
+  `;
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function showLiffQR(){
