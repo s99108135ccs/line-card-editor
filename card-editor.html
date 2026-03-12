@@ -1807,6 +1807,7 @@ function buildTaichunminJson(heroUrls){
 }
 
 const LIFF_ID = '2009436722-KlVkAIhF';
+const LIFF_MSG_KEY = 'liff_pending_msg';
 let liffReady = false;
 
 async function initLiff(){
@@ -1818,6 +1819,26 @@ async function initLiff(){
     throw new Error('LIFF 初始化失敗：' + e.message);
   }
 }
+
+// 頁面載入時，檢查是否有待發送的訊息（登入後回來）
+(async function checkPendingLiffMsg(){
+  try{
+    await initLiff();
+    if(!liff.isLoggedIn()) return;
+    const pending = sessionStorage.getItem(LIFF_MSG_KEY);
+    if(!pending) return;
+    sessionStorage.removeItem(LIFF_MSG_KEY);
+    const msg = JSON.parse(pending);
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      toast('⚠️ 請在 LINE app 內開啟以使用分享功能');
+      return;
+    }
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
+  } catch(e){ console.warn('pending msg check failed', e); }
+})();
 
 async function openOrig(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
@@ -1850,6 +1871,8 @@ async function openOrig(){
     await initLiff();
 
     if(!liff.isLoggedIn()){
+      // 存訊息到 sessionStorage，登入後回來繼續發送
+      sessionStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
       liff.login({ redirectUri: location.href });
       return;
     }
