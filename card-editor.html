@@ -1844,6 +1844,7 @@ async function initLiff(){
 }
 
 // 頁面載入時，檢查是否有待發送的訊息（URL hash 帶資料 or 登入後回來）
+window.addEventListener('load', async function(){
 (async function checkPendingLiffMsg(){
   try{
     // 等 LIFF SDK 載入完成
@@ -1855,20 +1856,26 @@ async function initLiff(){
     if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入');
     await initLiff();
     
-    // 優先讀 URL hash 裡的 Flex Message（電腦生成，手機掃碼進來）
-    const hash = location.hash.slice(1);
-    if(hash && hash.startsWith('msg=')){
-      const b64 = hash.slice(4);
-      const msgStr = decodeURIComponent(escape(atob(b64)));
-      const msg = JSON.parse(msgStr);
-      
+    // 優先讀 URL 裡的 bin 參數（電腦生成，手機掃碼進來）
+    const urlParams = new URLSearchParams(location.search);
+    const binId = urlParams.get('bin');
+    if(binId){
       if(!liff.isLoggedIn()){
-        // 先存起來，登入後回來繼續
-        sessionStorage.setItem(LIFF_MSG_KEY, msgStr);
+        sessionStorage.setItem('pending_bin', binId);
         liff.login({ redirectUri: location.href });
         return;
       }
-      
+      // 從 JSONbin 讀取 Flex Message
+      toast('⏳ 讀取名片資料...');
+      const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
+      const pendingBin = binId || sessionStorage.getItem('pending_bin');
+      sessionStorage.removeItem('pending_bin');
+      const binRes = await fetch(`https://api.jsonbin.io/v3/b/${pendingBin}/latest`, {
+        headers: { 'X-Access-Key': JSONBIN_KEY }
+      });
+      if(!binRes.ok) throw new Error('讀取資料失敗');
+      const binData = await binRes.json();
+      const msg = binData.record.msg;
       if(liff.isApiAvailable('shareTargetPicker')){
         toast('📤 開啟 LINE 分享...');
         const result = await liff.shareTargetPicker([msg]);
@@ -1876,6 +1883,29 @@ async function initLiff(){
         else { toast('ℹ️ 已取消分享'); }
       }
       return;
+    }
+    
+    // 登入後回來，檢查是否有待處理的 bin ID
+    if(liff.isLoggedIn()){
+      const pendingBin = sessionStorage.getItem('pending_bin');
+      if(pendingBin){
+        sessionStorage.removeItem('pending_bin');
+        toast('⏳ 讀取名片資料...');
+        const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
+        const binRes = await fetch(`https://api.jsonbin.io/v3/b/${pendingBin}/latest`, {
+          headers: { 'X-Access-Key': JSONBIN_KEY }
+        });
+        if(!binRes.ok) throw new Error('讀取資料失敗');
+        const binData = await binRes.json();
+        const msg = binData.record.msg;
+        if(liff.isApiAvailable('shareTargetPicker')){
+          toast('📤 開啟 LINE 分享...');
+          const result = await liff.shareTargetPicker([msg]);
+          if(result){ toast('✅ 名片已發送！'); }
+          else { toast('ℹ️ 已取消分享'); }
+        }
+        return;
+      }
     }
     
     // 登入後回來有待發訊息（sessionStorage）
@@ -1892,6 +1922,7 @@ async function initLiff(){
     }
   } catch(e){ console.warn('pending msg check failed', e); }
 })();
+});
 
 async function openOrig(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
@@ -1932,13 +1963,23 @@ async function openOrig(){
       }
     } catch(liffErr){ console.warn('LIFF direct share failed:', liffErr); }
 
-    // 電腦環境：把 Flex Message 編碼進 URL hash，QR code 掃碼後手機直接發送
-    toast('⏳ 產生分享連結...');
-    const msgStr = JSON.stringify(msg);
-    const b64 = btoa(unescape(encodeURIComponent(msgStr)));
-    // LIFF 不支援 hash，改用 liff.state 參數帶資料
-    // 但 URL 有長度限制，先試 hash 方式（部分 LIFF 支援）
-    const shareUrl = `https://liff.line.me/${LIFF_ID}#msg=${b64}`;
+    // 電腦環境：上傳到 JSONbin，QR code 只帶短 ID
+    toast('⏳ 上傳名片資料...');
+    const JSONBIN_KEY = '$2a$10$cqeO1e1/8V1goL4r0erk0O9M0YqOUiDHDosgFYotN964e86D9zU5m';
+    const binRes = await fetch('https://api.jsonbin.io/v3/b', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Access-Key': JSONBIN_KEY,
+        'X-Bin-Name': 'line-card-' + Date.now(),
+        'X-Bin-Private': 'false'
+      },
+      body: JSON.stringify({ msg })
+    });
+    if(!binRes.ok) throw new Error('JSONbin 上傳失敗 ' + binRes.status);
+    const binData = await binRes.json();
+    const binId = binData.metadata.id;
+    const shareUrl = `https://liff.line.me/${LIFF_ID}?bin=${binId}`;
     showShareQR(shareUrl, msg);
 
   } catch(err){
