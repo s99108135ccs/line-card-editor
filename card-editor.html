@@ -355,9 +355,9 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
           </div>
         </div>
         <div>
-          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">☁️ JSONbin Key <span style="font-weight:400;color:var(--text3)">（免費，用來傳送名片到手機）</span></div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">☁️ JSONbin Master Key <span style="font-weight:400;color:var(--text3)">（免費，用來傳送名片到手機）</span></div>
           <div style="display:flex;gap:6px;align-items:center">
-            <input class="finput" id="jsonbin-key" type="password" placeholder="貼上 JSONbin Access Key" style="flex:1;font-size:12px">
+            <input class="finput" id="jsonbin-key" type="password" placeholder="貼上 JSONbin Master Key" style="flex:1;font-size:12px">
             <button class="tbtn tbtn-outline" style="background:#fff;color:#e65100;border:1.5px solid #ffcc80;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://jsonbin.io/','_blank')">免費取得 ↗</button>
           </div>
         </div>
@@ -1877,7 +1877,7 @@ window.addEventListener('load', async function(){
       // 從 JSONbin 讀取名片資料
       toast('⏳ 讀取名片資料...');
       const jsonbinKey = (document.getElementById('jsonbin-key')?.value||'').trim();
-      const headers = jsonbinKey ? { 'X-Access-Key': jsonbinKey } : {};
+      const headers = jsonbinKey ? { 'X-Master-Key': jsonbinKey } : {};
       const binRes = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', { headers });
       if(!binRes.ok) throw new Error('讀取資料失敗 ' + binRes.status);
       const binData = await binRes.json();
@@ -1956,7 +1956,7 @@ async function openOrig(){
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Access-Key': jsonbinKey,
+        'X-Master-Key': jsonbinKey,
         'X-Bin-Private': 'false'
       },
       body: JSON.stringify({ msg })
