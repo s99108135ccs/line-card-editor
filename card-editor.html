@@ -1848,7 +1848,6 @@ async function initLiff(){
 // 頁面載入時，檢查是否有待發送的訊息（登入後回來）
 window.addEventListener('load', async function(){
   try{
-    // 等 LIFF SDK 載入
     let waited = 0;
     while(typeof liff === 'undefined' && waited < 8000){
       await new Promise(r=>setTimeout(r,200));
@@ -1857,81 +1856,32 @@ window.addEventListener('load', async function(){
     if(typeof liff === 'undefined') return;
 
     await initLiff();
+    if(!liff.isLoggedIn()) return;
 
-    // 手機掃碼進來：從 URL hash 讀取 pako 壓縮的名片資料
-    let gzData = null;
-    try{
-      // hash 直接讀 gz=
-      if(location.hash){
-        const hp = new URLSearchParams(location.hash.slice(1));
-        gzData = hp.get('gz');
-      }
-      // liff.state 可能把 hash 放在 query 裡
-      if(!gzData){
-        const sp = new URLSearchParams(location.search);
-        const liffState = sp.get('liff.state');
-        if(liffState){
-          const decoded = decodeURIComponent(liffState);
-          const hp = new URLSearchParams(decoded.includes('#') ? decoded.split('#')[1] : '');
-          gzData = hp.get('gz');
-        }
-      }
-    } catch(e){ console.warn('gz parse error:', e); }
+    // 登入後回來，有待發訊息
+    const pending = sessionStorage.getItem(LIFF_MSG_KEY);
+    if(!pending) return;
+    sessionStorage.removeItem(LIFF_MSG_KEY);
 
-    if(gzData){
-      if(!liff.isLoggedIn()){
-        sessionStorage.setItem('pending_gz', gzData);
-        liff.login({ redirectUri: location.href });
-        return;
-      }
-      // 解壓縮
-      toast('⏳ 讀取名片資料...');
-      const b64 = gzData.replace(/-/g,'+').replace(/_/g,'/');
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-      const msgStr = pako.inflate(bytes, {to:'string'});
-      const msg = JSON.parse(msgStr);
-      if(!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker');
-      toast('📤 開啟 LINE 分享...');
-      const result = await liff.shareTargetPicker([msg]);
-      if(result){ toast('✅ 名片已發送！'); }
-      else { toast('ℹ️ 已取消分享'); }
+    const msg = JSON.parse(pending);
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      // 不支援就改用 QR code
+      const msgStr = JSON.stringify(msg);
+      const compressed = pako.deflate(msgStr);
+      const b64 = btoa(String.fromCharCode(...compressed))
+        .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
+      const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
+      showShareQR(shareUrl);
       return;
     }
 
-    // 登入後回來有待處理的 gz 資料
-    const pendingGz = sessionStorage.getItem('pending_gz');
-    if(pendingGz && liff.isLoggedIn()){
-      sessionStorage.removeItem('pending_gz');
-      const b64 = pendingGz.replace(/-/g,'+').replace(/_/g,'/');
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-      const msgStr = pako.inflate(bytes, {to:'string'});
-      const msg = JSON.parse(msgStr);
-      if(!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker');
-      toast('📤 開啟 LINE 分享...');
-      const result = await liff.shareTargetPicker([msg]);
-      if(result){ toast('✅ 名片已發送！'); }
-      else { toast('ℹ️ 已取消分享'); }
-      return;
-    }
-
-    // 一般登入後回來有待發訊息
-    if(liff.isLoggedIn()){
-      const pending = sessionStorage.getItem(LIFF_MSG_KEY);
-      if(!pending) return;
-      sessionStorage.removeItem(LIFF_MSG_KEY);
-      const msg = JSON.parse(pending);
-      if(!liff.isApiAvailable('shareTargetPicker')) return;
-      toast('📤 開啟 LINE 分享...');
-      const result = await liff.shareTargetPicker([msg]);
-      if(result){ toast('✅ 名片已發送！'); }
-      else { toast('ℹ️ 已取消分享'); }
-    }
-  } catch(e){ console.warn('LIFF init failed (non-critical):', e.message); }
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
+  } catch(e){ console.warn('LIFF load check failed:', e.message); }
 });
+
 
 
 async function openOrig(){
@@ -1963,26 +1913,35 @@ async function openOrig(){
       contents: flexMsg.contents
     };
 
-    // 4. 嘗試直接用 LIFF 發送（手機 LINE 內）
-    try{
-      await initLiff();
-      if(liff.isLoggedIn() && liff.isApiAvailable('shareTargetPicker')){
-        toast('📤 開啟 LINE 分享...');
-        const result = await liff.shareTargetPicker([msg]);
-        if(result){ toast('✅ 名片已發送！'); }
-        else { toast('ℹ️ 已取消分享'); }
-        return;
-      }
-    } catch(e){ console.warn('LIFF direct failed:', e.message); }
+    // 4. LIFF 發送流程
+    toast('⏳ 連接 LINE...');
+    await initLiff();
 
-    // 5. 電腦環境 → pako 壓縮 → 帶參數跳到 share.html → QR code
-    toast('⏳ 產生分享連結...');
-    const msgStr = JSON.stringify(msg);
-    const compressed = pako.deflate(msgStr);
-    const b64 = btoa(String.fromCharCode(...compressed))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
-    showShareQR(shareUrl);
+    // 未登入 → 先存訊息，跳去登入
+    if(!liff.isLoggedIn()){
+      sessionStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    // 已登入，檢查 shareTargetPicker
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      // 電腦不支援時，改用 QR code
+      toast('⏳ 產生分享連結...');
+      const msgStr = JSON.stringify(msg);
+      const compressed = pako.deflate(msgStr);
+      const b64 = btoa(String.fromCharCode(...compressed))
+        .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
+      const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
+      showShareQR(shareUrl);
+      return;
+    }
+
+    // 直接發送
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
 
   } catch(err){
     console.error(err);
