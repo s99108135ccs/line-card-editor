@@ -1848,6 +1848,11 @@ async function initLiff(){
 // 頁面載入時，檢查是否有待發送的訊息（登入後回來）
 window.addEventListener('load', async function(){
   try{
+    // 如果有 liff.state 參數，讓 LIFF SDK 自己處理跳轉，不干擾
+    if(new URLSearchParams(location.search).get('liff.state')){
+      return await new Promise(()=>{}); // 永遠等待，不執行後續
+    }
+
     let waited = 0;
     while(typeof liff === 'undefined' && waited < 8000){
       await new Promise(r=>setTimeout(r,200));
