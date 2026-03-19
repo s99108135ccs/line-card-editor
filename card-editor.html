@@ -1849,7 +1849,7 @@ function getProjectId(){
 // 從 Supabase 載入
 async function loadFromCloud(projectId){
   const sb = getSB();
-  const { data: row, error } = await sb.from('cards').select('*').eq('id', projectId).single();
+  const { data: row, error } = await sb.from('card').select('*').eq('id', projectId).single();
   if(error) throw error;
   return row;
 }
@@ -1857,7 +1857,7 @@ async function loadFromCloud(projectId){
 // 列出所有專案
 async function listProjects(){
   const sb = getSB();
-  const { data, error } = await sb.from('cards').select('id,name,updated_at').order('updated_at', {ascending:false});
+  const { data, error } = await sb.from('card').select('id,name,updated_at').order('updated_at', {ascending:false});
   if(error) throw error;
   return data;
 }
@@ -2025,7 +2025,7 @@ async function saveToCloud(name){
   const sb = getSB();
   const projectId = getProjectId();
   if(projectId){
-    const { error } = await sb.from('cards').update({
+    const { error } = await sb.from('card').update({
       name: name || state.projectName || '未命名名片',
       data,
       updated_at: new Date().toISOString()
@@ -2033,7 +2033,7 @@ async function saveToCloud(name){
     if(error) throw error;
     return projectId;
   } else {
-    const { data: row, error } = await sb.from('cards').insert({
+    const { data: row, error } = await sb.from('card').insert({
       name: name || state.projectName || '未命名名片',
       data,
       updated_at: new Date().toISOString()
@@ -2119,7 +2119,7 @@ async function deleteProject(id){
   if(!confirm('確定要刪除這個專案嗎？')) return;
   try{
     const sb = getSB();
-    await sb.from('cards').delete().eq('id', id);
+    await sb.from('card').delete().eq('id', id);
     if(getProjectId() === id) localStorage.removeItem('sb_project_id');
     showProjects();
   } catch(e){

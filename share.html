@@ -42,7 +42,7 @@ let pendingMsg = null;
 
 async function loadMsgFromSupabase(projectId){
   const sb = supabase.createClient(SB_URL, SB_KEY);
-  const { data: row, error } = await sb.from('cards').select('data').eq('id', projectId).single();
+  const { data: row, error } = await sb.from('card').select('data').eq('id', projectId).single();
   if(error) throw new Error('讀取失敗：' + error.message);
   const state = JSON.parse(row.data);
   // 從 state 重建 Flex Message
@@ -172,7 +172,7 @@ window.addEventListener('load', async function main(){
 
     // 從 Supabase 讀取名片資料
     const sb = supabase.createClient(SB_URL, SB_KEY);
-    const { data: row, error: sbErr } = await sb.from('cards').select('data').eq('id', pid).single();
+    const { data: row, error: sbErr } = await sb.from('card').select('data').eq('id', pid).single();
     if(sbErr) throw new Error('讀取資料失敗：' + sbErr.message);
     
     const state = JSON.parse(row.data);
