@@ -1876,7 +1876,7 @@ async function initLiff(){
   }
   if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入，請檢查網路');
   try{
-    await liff.init({ liffId: LIFF_ID });
+    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
   } catch(e){
     // endpoint 不符的警告不影響功能，只要已登入就繼續
     if(!liff.isLoggedIn()) throw new Error('LIFF 初始化失敗：' + e.message);
