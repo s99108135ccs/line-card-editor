@@ -1975,14 +1975,13 @@ async function openOrig(){
       }
     } catch(e){ console.warn('LIFF direct failed:', e.message); }
 
-    // 5. 電腦環境 → 用 pako 壓縮塞進 URL → QR code 讓手機掃
+    // 5. 電腦環境 → pako 壓縮 → 帶參數跳到 share.html → QR code
     toast('⏳ 產生分享連結...');
     const msgStr = JSON.stringify(msg);
     const compressed = pako.deflate(msgStr);
-    // URL-safe base64
     const b64 = btoa(String.fromCharCode(...compressed))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    const shareUrl = 'https://liff.line.me/' + LIFF_ID + '#gz=' + b64;
+    const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
     showShareQR(shareUrl);
 
   } catch(err){
