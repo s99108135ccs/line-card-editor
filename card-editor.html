@@ -1825,6 +1825,7 @@ function buildTaichunminJson(heroUrls){
 }
 
 const LIFF_ID = '2009436722-KlVkAIhF';
+const SHARE_LIFF_ID = '2009436722-02IEHSWP';
 const LIFF_MSG_KEY = 'liff_pending_msg';
 let liffReady = false;
 
@@ -1875,7 +1876,7 @@ window.addEventListener('load', async function(){
       const compressed = pako.deflate(msgStr);
       const b64 = btoa(String.fromCharCode(...compressed))
         .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
-      const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
+      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?gz=' + b64;
       showShareQR(shareUrl);
       return;
     }
@@ -1937,7 +1938,7 @@ async function openOrig(){
       const compressed = pako.deflate(msgStr);
       const b64 = btoa(String.fromCharCode(...compressed))
         .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
-      const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?gz=' + b64;
+      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?gz=' + b64;
       showShareQR(shareUrl);
       return;
     }
