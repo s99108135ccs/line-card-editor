@@ -1843,7 +1843,9 @@ function getSB(){
 
 // 取得目前專案 ID（從 URL 或 localStorage）
 function getProjectId(){
-  return localStorage.getItem('sb_project_id') || null;
+  const v = localStorage.getItem('sb_project_id');
+  if(!v || v === 'null' || v === 'undefined') return null;
+  return v;
 }
 
 // 從 Supabase 載入
