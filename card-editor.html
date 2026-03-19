@@ -1981,10 +1981,14 @@ async function openOrig(){
       return;
     }
 
-    // 電腦環境 → 顯示 QR code 讓手機 LINE 掃碼發送
-    toast('✅ 名片已儲存！請用手機 LINE 掃碼發送');
-    const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
-    showShareQR(shareUrl);
+    // 直接發送
+    if(!liff.isApiAvailable('shareTargetPicker')){
+      throw new Error('此環境不支援 shareTargetPicker');
+    }
+    toast('📤 開啟 LINE 分享...');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result){ toast('✅ 名片已發送！'); }
+    else { toast('ℹ️ 已取消分享'); }
 
   } catch(err){
     console.error(err);
