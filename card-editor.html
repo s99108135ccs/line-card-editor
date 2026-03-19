@@ -311,6 +311,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 }
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </head>
 <body>
@@ -524,7 +525,8 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
   <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'">🚀 發布到 LINE</button>
   <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="複製 JSON 到剪貼簿">📋 複製</button>
-  <button onclick="doSaveProject()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="下載存檔">💾 存檔</button>
+  <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
+  <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="專案列表">📂 專案</button>
 </div>
 
 <!-- 發布步驟說明（收折） -->
@@ -1826,6 +1828,37 @@ function buildTaichunminJson(heroUrls){
 
 const LIFF_ID = '2009436722-KlVkAIhF';
 const SHARE_LIFF_ID = '2009436722-02IEHSWP';
+
+// ── Supabase 設定 ──
+const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
+const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
+let sbClient = null;
+function getSB(){
+  if(!sbClient) sbClient = supabase.createClient(SB_URL, SB_KEY);
+  return sbClient;
+}
+
+// 取得目前專案 ID（從 URL 或 localStorage）
+function getProjectId(){
+  return localStorage.getItem('sb_project_id') || null;
+}
+
+// 從 Supabase 載入
+async function loadFromCloud(projectId){
+  const sb = getSB();
+  const { data: row, error } = await sb.from('cards').select('*').eq('id', projectId).single();
+  if(error) throw error;
+  return row;
+}
+
+// 列出所有專案
+async function listProjects(){
+  const sb = getSB();
+  const { data, error } = await sb.from('cards').select('id,name,updated_at').order('updated_at', {ascending:false});
+  if(error) throw error;
+  return data;
+}
+const SHARE_LIFF_ID = '2009436722-02IEHSWP';
 const LIFF_MSG_KEY = 'liff_pending_msg';
 let liffReady = false;
 
@@ -1919,26 +1952,30 @@ async function openOrig(){
       contents: flexMsg.contents
     };
 
-    // 4. LIFF 發送流程
+    // 4. 存到雲端（讓手機也能讀到，包含完整 msg）
+    toast('⏳ 儲存名片資料...');
+    // 把準備好的 msg 暫存進 state
+    window._pendingMsg = msg;
+    const projectId = await saveToCloud();
+    window._pendingMsg = null;
+    console.log('saved to cloud, id:', projectId);
+
+    // 5. LIFF 發送流程
     toast('⏳ 連接 LINE...');
     await initLiff();
 
     // 未登入 → 先存訊息，跳去登入
     if(!liff.isLoggedIn()){
       localStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
+      localStorage.setItem('liff_project_id', projectId);
       liff.login({ redirectUri: location.href });
       return;
     }
 
     // 已登入，檢查 shareTargetPicker
     if(!liff.isApiAvailable('shareTargetPicker')){
-      // 電腦不支援時，改用 QR code
-      toast('⏳ 產生分享連結...');
-      const msgStr = JSON.stringify(msg);
-      const compressed = pako.deflate(msgStr);
-      const b64 = btoa(String.fromCharCode(...compressed))
-        .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
-      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?gz=' + b64;
+      // 電腦不支援，顯示 QR code 讓手機掃
+      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
       showShareQR(shareUrl);
       return;
     }
@@ -1976,6 +2013,124 @@ function showShareQR(shareUrl){
   `;
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+// ── 雲端存檔（包含 pendingMsg）──
+async function saveToCloud(name){
+  const state = getProjectState();
+  if(window._pendingMsg) state.pendingMsg = window._pendingMsg;
+  const data = JSON.stringify(state);
+  const sb = getSB();
+  const projectId = getProjectId();
+  if(projectId){
+    const { error } = await sb.from('cards').update({
+      name: name || state.projectName || '未命名名片',
+      data,
+      updated_at: new Date().toISOString()
+    }).eq('id', projectId);
+    if(error) throw error;
+    return projectId;
+  } else {
+    const { data: row, error } = await sb.from('cards').insert({
+      name: name || state.projectName || '未命名名片',
+      data,
+      updated_at: new Date().toISOString()
+    }).select().single();
+    if(error) throw error;
+    localStorage.setItem('sb_project_id', row.id);
+    return row.id;
+  }
+}
+
+// ── 雲端存檔按鈕 ──
+async function doCloudSave(){
+  try{
+    toast('⏳ 儲存中...');
+    const id = await saveToCloud();
+    toast('✅ 已儲存到雲端！');
+    console.log('saved project id:', id);
+  } catch(e){
+    toast('❌ 儲存失敗：' + e.message);
+    console.error(e);
+  }
+}
+
+// ── 專案列表 ──
+async function showProjects(){
+  try{
+    toast('⏳ 載入專案列表...');
+    const projects = await listProjects();
+    
+    document.getElementById('projects-overlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'projects-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);font-family:inherit;';
+    
+    const currentId = getProjectId();
+    const rows = projects.map(p => {
+      const date = new Date(p.updated_at).toLocaleString('zh-TW');
+      const isCurrent = p.id === currentId;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;background:${isCurrent?'#f0f8f0':'#f9f9f9'};border:1.5px solid ${isCurrent?'#00b900':'#eee'};cursor:pointer" onclick="loadProject('${p.id}')">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px;color:#1a1a1a">${p.name}${isCurrent?' ✓':''}</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">${date}</div>
+        </div>
+        <button onclick="event.stopPropagation();deleteProject('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px">🗑</button>
+      </div>`;
+    }).join('');
+    
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:28px;max-width:420px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.3);max-height:80vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-size:18px;font-weight:800;color:#1a1a1a">📂 我的專案</div>
+          <button onclick="document.getElementById('projects-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#ccc">✕</button>
+        </div>
+        <button onclick="newProject()" style="width:100%;padding:12px;border-radius:10px;border:1.5px dashed #00b900;background:#f0f8f0;color:#00b900;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">＋ 新建專案</button>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${rows.length ? rows : '<div style="text-align:center;color:#aaa;padding:20px">還沒有專案，先存個檔吧！</div>'}
+        </div>
+      </div>
+    `;
+    overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    toast('');
+  } catch(e){
+    toast('❌ 載入失敗：' + e.message);
+  }
+}
+
+async function loadProject(id){
+  try{
+    toast('⏳ 載入專案...');
+    document.getElementById('projects-overlay')?.remove();
+    const row = await loadFromCloud(id);
+    const state = JSON.parse(row.data);
+    localStorage.setItem('sb_project_id', id);
+    localStorage.setItem('line-card-project', JSON.stringify(state));
+    location.reload();
+  } catch(e){
+    toast('❌ 載入失敗：' + e.message);
+  }
+}
+
+async function deleteProject(id){
+  if(!confirm('確定要刪除這個專案嗎？')) return;
+  try{
+    const sb = getSB();
+    await sb.from('cards').delete().eq('id', id);
+    if(getProjectId() === id) localStorage.removeItem('sb_project_id');
+    showProjects();
+  } catch(e){
+    toast('❌ 刪除失敗：' + e.message);
+  }
+}
+
+function newProject(){
+  if(!confirm('新建專案會清空目前編輯內容，確定嗎？')) return;
+  localStorage.removeItem('sb_project_id');
+  localStorage.removeItem('line-card-project');
+  document.getElementById('projects-overlay')?.remove();
+  location.reload();
 }
 
 function toJson5(obj){

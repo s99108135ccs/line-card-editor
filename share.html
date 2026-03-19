@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>THE TAG 名片分享</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
@@ -36,7 +36,21 @@
 
 <script>
 const LIFF_ID = '2009436722-02IEHSWP';
+const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
+const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
 let pendingMsg = null;
+
+async function loadMsgFromSupabase(projectId){
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const { data: row, error } = await sb.from('cards').select('data').eq('id', projectId).single();
+  if(error) throw new Error('讀取失敗：' + error.message);
+  const state = JSON.parse(row.data);
+  // 從 state 重建 Flex Message
+  // state 裡面有 cards、ratio 等設定，但沒有合成好的圖片
+  // 我們存的是完整的 msg，直接用
+  if(state.pendingMsg) return state.pendingMsg;
+  throw new Error('專案資料中沒有名片訊息');
+}
 
 function setProgress(pct){ document.getElementById('progress-bar').style.width = pct + '%'; }
 function setStatus(txt){ document.getElementById('status-text').textContent = txt; }
@@ -122,18 +136,26 @@ window.addEventListener('load', async function main(){
     console.log('hash:', location.hash);
     setStatus('URL: ' + location.search.slice(0,60));
 
-    // 先讀資料（在 init 前，因為 init 後 URL 可能被改）
-    const msgFromUrl = getMsgFromUrl();
-    if(msgFromUrl){
-      sessionStorage.setItem('pending_msg', JSON.stringify(msgFromUrl));
+    // 從 URL 讀取 project ID
+    const sp = new URLSearchParams(location.search);
+    let pid = sp.get('pid');
+    // liff.state 裡讀
+    if(!pid){
+      const liffState = sp.get('liff.state');
+      if(liffState){
+        const decoded = decodeURIComponent(liffState);
+        pid = new URLSearchParams(decoded.startsWith('?') ? decoded.slice(1) : decoded).get('pid');
+      }
     }
-
+    if(!pid) pid = sessionStorage.getItem('pending_pid');
+    
     setProgress(40);
     await liff.init({ liffId: LIFF_ID });
     setProgress(60);
 
-    // 未登入 → 登入
+    // 未登入 → 儲存 pid 後登入
     if(!liff.isLoggedIn()){
+      if(pid) sessionStorage.setItem('pending_pid', pid);
       setStatus('🔐 請登入 LINE...');
       liff.login({ redirectUri: location.href });
       return;
@@ -142,18 +164,20 @@ window.addEventListener('load', async function main(){
     setProgress(80);
     setStatus('⏳ 讀取名片資料...');
 
-    // 讀取訊息（優先從 sessionStorage，其次從 URL）
-    const stored = sessionStorage.getItem('pending_msg');
-    if(stored){
-      pendingMsg = JSON.parse(stored);
-      sessionStorage.removeItem('pending_msg');
-    } else if(msgFromUrl){
-      pendingMsg = msgFromUrl;
-    }
-
-    if(!pendingMsg){
+    if(!pid){
       throw new Error('找不到名片資料，請重新掃描 QR code');
     }
+
+    sessionStorage.removeItem('pending_pid');
+
+    // 從 Supabase 讀取名片資料
+    const sb = supabase.createClient(SB_URL, SB_KEY);
+    const { data: row, error: sbErr } = await sb.from('cards').select('data').eq('id', pid).single();
+    if(sbErr) throw new Error('讀取資料失敗：' + sbErr.message);
+    
+    const state = JSON.parse(row.data);
+    if(!state.pendingMsg) throw new Error('名片資料不完整，請重新按發布');
+    pendingMsg = state.pendingMsg;
 
     setProgress(100);
 
