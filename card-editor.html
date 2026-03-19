@@ -1877,10 +1877,11 @@ async function initLiff(){
   if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入，請檢查網路');
   try{
     await liff.init({ liffId: LIFF_ID });
-    liffReady = true;
   } catch(e){
-    throw new Error('LIFF 初始化失敗：' + e.message);
+    // endpoint 不符的警告不影響功能，只要已登入就繼續
+    if(!liff.isLoggedIn()) throw new Error('LIFF 初始化失敗：' + e.message);
   }
+  liffReady = true;
 }
 
 // 頁面載入時，檢查是否有待發送的訊息（登入後回來）
@@ -1976,19 +1977,25 @@ async function openOrig(){
       return;
     }
 
-    // 已登入，檢查 shareTargetPicker
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      // 電腦不支援，顯示 QR code 讓手機掃
-      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
-      showShareQR(shareUrl);
-      return;
-    }
+    // 取得 OTT（One-Time Token）然後開啟 LINE 選人畫面
+    toast('📤 開啟 LINE 選人畫面...');
+    const accessToken = liff.getAccessToken();
+    const ottRes = await fetch('https://api.line.me/liff/v2/apps/' + LIFF_ID + '/ott', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + accessToken
+      }
+    });
+    if(!ottRes.ok) throw new Error('OTT 取得失敗 ' + ottRes.status);
+    const ottData = await ottRes.json();
+    const ott = ottData.ott;
+    if(!ott) throw new Error('OTT 回傳為空');
 
-    // 直接發送
-    toast('📤 開啟 LINE 分享...');
-    const result = await liff.shareTargetPicker([msg]);
-    if(result){ toast('✅ 名片已發送！'); }
-    else { toast('ℹ️ 已取消分享'); }
+    // 開啟 LINE 選人畫面
+    const sharePickerUrl = 'https://access.line.me/oauth2/v2.1/liff/shareTargetPicker?liffId=' + LIFF_ID + '&ott=' + ott;
+    window.location.href = sharePickerUrl;
 
   } catch(err){
     console.error(err);
