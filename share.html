@@ -86,10 +86,11 @@ function getPidFromUrl(){
 
 window.addEventListener('load', async function(){
   try{
-    // 如果有 liff.state，讓 LIFF SDK 自己處理跳轉
+    // 如果有 liff.state，讓 LIFF SDK 自己處理跳轉後繼續
     if(new URLSearchParams(location.search).get('liff.state')){
       setSt('⏳ 跳轉中...');
-      return;
+      await new Promise(r=>setTimeout(r,3000));
+      // 3秒後繼續（LIFF 應該已處理完跳轉）
     }
 
     setP(20);
