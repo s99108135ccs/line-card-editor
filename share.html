@@ -116,6 +116,12 @@ window.addEventListener('load', async function main(){
     }
     if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入，請確認網路連線');
 
+    // Debug：顯示當前 URL 資訊
+    console.log('URL:', location.href);
+    console.log('search:', location.search);
+    console.log('hash:', location.hash);
+    setStatus('URL: ' + location.search.slice(0,60));
+
     // 先讀資料（在 init 前，因為 init 後 URL 可能被改）
     const msgFromUrl = getMsgFromUrl();
     if(msgFromUrl){
@@ -159,6 +165,10 @@ window.addEventListener('load', async function main(){
     // 直接觸發分享
     setStatus('📤 開啟 LINE 選人畫面...');
     document.getElementById('sub-text').textContent = '選擇要傳送名片的對象';
+    // 顯示 msg 摘要在畫面上
+    const msgSummary = `type:${pendingMsg.type} contents:${pendingMsg.contents?.type} cards:${pendingMsg.contents?.contents?.length}`;
+    document.getElementById('sub-text').textContent = msgSummary;
+    console.log('msg:', JSON.stringify(pendingMsg).slice(0,300));
     const result = await liff.shareTargetPicker([pendingMsg]);
     if(result){
       setStatus('✅ 名片已發送！');
