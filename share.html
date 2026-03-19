@@ -12,13 +12,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card{background:#fff;border-radius:20px;padding:40px 32px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.12)}
 .logo{font-size:48px;margin-bottom:16px}
 .title{font-size:20px;font-weight:800;color:#00b900;margin-bottom:8px}
-.sub{font-size:14px;color:#888;margin-bottom:32px;line-height:1.6}
+.sub{font-size:14px;color:#888;margin-bottom:24px;line-height:1.6}
 .status{font-size:15px;color:#444;margin-bottom:8px;font-weight:600}
-.progress{width:100%;height:6px;background:#e8e8e8;border-radius:3px;overflow:hidden;margin-bottom:24px}
+.progress{width:100%;height=6px;background:#e8e8e8;border-radius:3px;overflow:hidden;margin-bottom:24px;height:6px}
 .bar{height:100%;background:#00b900;border-radius:3px;transition:width .4s;width:0%}
-.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;display:none}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
 .btn-green{background:#00b900;color:#fff}
-.err{color:#e53935;font-size:13px;margin-top:16px;line-height:1.5;display:none;background:#fff0f0;padding:12px;border-radius:8px}
+.btn-gray{background:#f5f5f5;color:#666;border:1.5px solid #e0e0e0}
+.err{color:#e53935;font-size:13px;margin-top:16px;line-height:1.5;background:#fff0f0;padding:12px;border-radius:8px}
+.log{font-size:11px;color:#aaa;margin-top:12px;text-align:left;word-break:break-all}
 </style>
 </head>
 <body>
@@ -28,19 +30,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="sub" id="sub">正在準備名片資料...</div>
   <div class="status" id="status">⏳ 初始化中...</div>
   <div class="progress"><div class="bar" id="bar"></div></div>
-  <button class="btn btn-green" id="btn-share" onclick="doShare()">📤 選擇傳送對象</button>
-  <button class="btn" id="btn-retry" onclick="location.reload()" style="background:#f5f5f5;color:#666;border:1.5px solid #e0e0e0">🔄 重試</button>
-  <div class="err" id="err"></div>
+  <button class="btn btn-green" id="btn-share" style="display:none" onclick="doShare()">📤 選擇傳送對象</button>
+  <button class="btn btn-gray" id="btn-retry" style="display:none" onclick="location.reload()">🔄 重試</button>
+  <div class="err" id="err" style="display:none"></div>
+  <div class="log" id="log"></div>
 </div>
 
 <script>
-const LIFF_ID = '2009436722-KlVkAIhF';
+const LIFF_ID = '2009436722-02IEHSWP';
 const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
 const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
 let pendingMsg = null;
 
+function log(t){ document.getElementById('log').innerHTML += t + '<br>'; }
 function setP(p){ document.getElementById('bar').style.width = p+'%'; }
-function setSt(t){ document.getElementById('status').textContent = t; }
+function setSt(t){ document.getElementById('status').textContent = t; log(t); }
 function setSub(t){ document.getElementById('sub').textContent = t; }
 function showErr(msg){
   document.getElementById('err').style.display='block';
@@ -60,7 +64,7 @@ async function doShare(){
       setP(100);
       setTimeout(()=>{ try{ liff.closeWindow(); }catch(e){} }, 1500);
     } else {
-      setSt('已取消，可重新發送');
+      setSt('已取消');
       document.getElementById('btn-share').style.display='block';
     }
   }catch(e){
@@ -68,89 +72,101 @@ async function doShare(){
   }
 }
 
-// 從 URL 讀取 pid
-function getPidFromUrl(){
+function getPid(){
+  // 先試 location.search
   const sp = new URLSearchParams(location.search);
   let pid = sp.get('pid');
+  log('direct pid: ' + pid);
+  
+  // 試 liff.state
   if(!pid){
     const liffState = sp.get('liff.state');
     if(liffState){
       try{
         const decoded = decodeURIComponent(liffState);
-        pid = new URLSearchParams(decoded.startsWith('?')?decoded.slice(1):decoded).get('pid');
-      }catch(e){}
+        log('liff.state: ' + decoded.slice(0,50));
+        const sp2 = new URLSearchParams(decoded.startsWith('?')?decoded.slice(1):decoded);
+        pid = sp2.get('pid');
+        log('pid from liff.state: ' + pid);
+      }catch(e){ log('liff.state parse err: '+e.message); }
     }
   }
+  
+  // sessionStorage
+  if(!pid){
+    pid = sessionStorage.getItem('pending_pid');
+    log('pid from session: ' + pid);
+  }
+  
   return pid;
 }
 
-window.addEventListener('load', async function(){
+(async function main(){
   try{
-    // 如果有 liff.state，讓 LIFF SDK 自己處理跳轉後繼續
-    if(new URLSearchParams(location.search).get('liff.state')){
-      setSt('⏳ 跳轉中...');
-      await new Promise(r=>setTimeout(r,3000));
-      // 3秒後繼續（LIFF 應該已處理完跳轉）
-    }
-
-    setP(20);
-    setSt('⏳ 等待 LIFF SDK...');
-
+    log('start, url: ' + location.search.slice(0,80));
+    setP(10);
+    setSt('⏳ 等待 SDK...');
+    
     let waited = 0;
     while(typeof liff === 'undefined' && waited < 10000){
       await new Promise(r=>setTimeout(r,200));
       waited += 200;
     }
     if(typeof liff === 'undefined') throw new Error('LIFF SDK 未載入');
-
-    setP(40);
+    log('SDK loaded');
+    
+    setP(30);
     setSt('⏳ 初始化 LIFF...');
+    
+    // 先讀 pid，init 之前
+    const pidBefore = getPid();
+    log('pid before init: ' + pidBefore);
+    if(pidBefore) sessionStorage.setItem('pending_pid', pidBefore);
+    
     await liff.init({ liffId: LIFF_ID });
-    setP(60);
-
-    // 未登入 → 先存 pid，跳去登入
-    const pid = getPidFromUrl() || sessionStorage.getItem('pending_pid');
+    log('liff init done, loggedIn: ' + liff.isLoggedIn());
+    setP(50);
+    
+    const pid = getPid();
+    log('pid after init: ' + pid);
+    
     if(!liff.isLoggedIn()){
-      if(pid) sessionStorage.setItem('pending_pid', pid);
       setSt('🔐 請登入 LINE...');
       liff.login({ redirectUri: location.href });
       return;
     }
-
-    setP(80);
-    setSt('⏳ 讀取名片資料...');
-
-    if(!pid) throw new Error('找不到名片資料，請重新從電腦發布');
+    
+    if(!pid) throw new Error('找不到名片資料 (pid=null)，請重新從電腦發布');
     sessionStorage.removeItem('pending_pid');
-
-    // 從 Supabase 讀取
+    
+    setP(70);
+    setSt('⏳ 讀取名片資料...');
+    log('fetching from supabase, pid: ' + pid);
+    
     const sb = supabase.createClient(SB_URL, SB_KEY);
     const { data: row, error } = await sb.from('card').select('data').eq('id', pid).single();
-    if(error) throw new Error('讀取失敗：'+error.message);
-
+    if(error) throw new Error('Supabase 錯誤：'+error.message);
+    if(!row) throw new Error('找不到資料，pid: '+pid);
+    
     const state = JSON.parse(row.data);
-    if(!state.pendingMsg) throw new Error('名片資料不完整，請重新從電腦按發布');
+    if(!state.pendingMsg) throw new Error('名片資料不完整');
     pendingMsg = state.pendingMsg;
-
-    setP(100);
-
-    // 確認 shareTargetPicker 可用
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      throw new Error('此環境不支援發送功能');
-    }
-
-    setSt('✅ 名片準備好了！');
+    log('msg loaded, type: ' + pendingMsg.type);
+    
+    setP(90);
+    setSt('✅ 準備完成！');
     setSub('點下方按鈕選擇要傳送的對象');
     document.getElementById('btn-share').style.display='block';
-
+    
     // 自動觸發
-    setTimeout(()=>doShare(), 500);
-
+    await new Promise(r=>setTimeout(r,500));
+    doShare();
+    
   }catch(e){
-    console.error(e);
+    log('ERROR: '+e.message);
     showErr(e.message);
   }
-});
+})();
 </script>
 </body>
 </html>
