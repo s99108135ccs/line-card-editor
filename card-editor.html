@@ -311,6 +311,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 }
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </head>
 <body>
 
@@ -354,16 +355,10 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
             <button class="tbtn tbtn-outline" style="background:#fff;color:#9c27b0;border:1.5px solid #e1bee7;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://www.remove.bg/api','_blank')">免費取得 ↗</button>
           </div>
         </div>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">☁️ JSONbin Master Key <span style="font-weight:400;color:var(--text3)">（免費，用來傳送名片到手機）</span></div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input class="finput" id="jsonbin-key" type="password" placeholder="貼上 JSONbin Master Key" style="flex:1;font-size:12px">
-            <button class="tbtn tbtn-outline" style="background:#fff;color:#e65100;border:1.5px solid #ffcc80;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://jsonbin.io/','_blank')">免費取得 ↗</button>
-          </div>
-        </div>
+
         <div style="font-size:10px;color:#a06000;margin-top:2px">
           Key 只存在你的瀏覽器，不會上傳到任何伺服器。
-          <span style="cursor:pointer;text-decoration:underline" onclick="['imgbb-key','rmbg-api-key','jsonbin-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
+          <span style="cursor:pointer;text-decoration:underline" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
         </div>
       </div>
     </div>
@@ -1863,45 +1858,58 @@ window.addEventListener('load', async function(){
 
     await initLiff();
 
-    // 手機掃碼進來：從各種位置讀取 bin 參數
-    let binId = sessionStorage.getItem('pending_bin');
-    if(!binId){
-      try{
-        // location.search 直接讀
+    // 手機掃碼進來：從 URL hash 讀取 pako 壓縮的名片資料
+    let gzData = null;
+    try{
+      // hash 直接讀 gz=
+      if(location.hash){
+        const hp = new URLSearchParams(location.hash.slice(1));
+        gzData = hp.get('gz');
+      }
+      // liff.state 可能把 hash 放在 query 裡
+      if(!gzData){
         const sp = new URLSearchParams(location.search);
-        binId = sp.get('bin');
-
-        // liff.state 裡面讀（LIFF 跳轉後 query 會放這裡）
-        if(!binId){
-          const liffState = sp.get('liff.state');
-          if(liffState){
-            const decoded = decodeURIComponent(liffState);
-            const stateSp = new URLSearchParams(decoded.startsWith('?') ? decoded.slice(1) : decoded);
-            binId = stateSp.get('bin');
-          }
+        const liffState = sp.get('liff.state');
+        if(liffState){
+          const decoded = decodeURIComponent(liffState);
+          const hp = new URLSearchParams(decoded.includes('#') ? decoded.split('#')[1] : '');
+          gzData = hp.get('gz');
         }
+      }
+    } catch(e){ console.warn('gz parse error:', e); }
 
-        // hash 讀
-        if(!binId && location.hash){
-          binId = new URLSearchParams(location.hash.slice(1)).get('bin');
-        }
-      } catch(e){ console.warn('binId parse error:', e); }
-    }
-    console.log('binId:', binId, 'search:', location.search, 'hash:', location.hash);
-
-    if(binId){
-      sessionStorage.removeItem('pending_bin');
+    if(gzData){
       if(!liff.isLoggedIn()){
-        sessionStorage.setItem('pending_bin', binId);
+        sessionStorage.setItem('pending_gz', gzData);
         liff.login({ redirectUri: location.href });
         return;
       }
-      // 從 JSONbin 讀取名片資料（bin 設為 public，不需要 key）
+      // 解壓縮
       toast('⏳ 讀取名片資料...');
-      const binRes = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest');
-      if(!binRes.ok) throw new Error('讀取資料失敗 ' + binRes.status);
-      const binData = await binRes.json();
-      const msg = binData.record.msg;
+      const b64 = gzData.replace(/-/g,'+').replace(/_/g,'/');
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+      const msgStr = pako.inflate(bytes, {to:'string'});
+      const msg = JSON.parse(msgStr);
+      if(!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker');
+      toast('📤 開啟 LINE 分享...');
+      const result = await liff.shareTargetPicker([msg]);
+      if(result){ toast('✅ 名片已發送！'); }
+      else { toast('ℹ️ 已取消分享'); }
+      return;
+    }
+
+    // 登入後回來有待處理的 gz 資料
+    const pendingGz = sessionStorage.getItem('pending_gz');
+    if(pendingGz && liff.isLoggedIn()){
+      sessionStorage.removeItem('pending_gz');
+      const b64 = pendingGz.replace(/-/g,'+').replace(/_/g,'/');
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+      const msgStr = pako.inflate(bytes, {to:'string'});
+      const msg = JSON.parse(msgStr);
       if(!liff.isApiAvailable('shareTargetPicker')) throw new Error('不支援 shareTargetPicker');
       toast('📤 開啟 LINE 分享...');
       const result = await liff.shareTargetPicker([msg]);
@@ -1967,28 +1975,14 @@ async function openOrig(){
       }
     } catch(e){ console.warn('LIFF direct failed:', e.message); }
 
-    // 5. 電腦環境 → 上傳到 JSONbin → 顯示 QR code 讓手機掃
-    const jsonbinKey = (document.getElementById('jsonbin-key')?.value||'').trim();
-    if(!jsonbinKey) throw new Error('請填入 JSONbin Key 才能產生 QR code 分享');
-
-    toast('⏳ 上傳名片資料到雲端...');
-    const binRes = await fetch('https://api.jsonbin.io/v3/b', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': jsonbinKey,
-        'X-Bin-Private': 'false'
-      },
-      body: JSON.stringify({ msg })
-    });
-    if(!binRes.ok){
-      const errText = await binRes.text();
-      throw new Error('JSONbin 上傳失敗 ' + binRes.status + '：' + errText);
-    }
-    const binData = await binRes.json();
-    const binId = binData.metadata.id;
-    const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?bin=' + binId;
-    // liff.state 格式備用（LIFF 跳轉時會保留）
+    // 5. 電腦環境 → 用 pako 壓縮塞進 URL → QR code 讓手機掃
+    toast('⏳ 產生分享連結...');
+    const msgStr = JSON.stringify(msg);
+    const compressed = pako.deflate(msgStr);
+    // URL-safe base64
+    const b64 = btoa(String.fromCharCode(...compressed))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const shareUrl = 'https://liff.line.me/' + LIFF_ID + '#gz=' + b64;
     showShareQR(shareUrl);
 
   } catch(err){
