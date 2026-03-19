@@ -12,12 +12,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card{background:#fff;border-radius:20px;padding:40px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.12)}
 .logo{font-size:48px;margin-bottom:12px}
 .title{font-size:20px;font-weight:800;color:#00b900;margin-bottom:6px}
-.sub{font-size:13px;color:#999;margin-bottom:28px;line-height:1.6}
+.sub{font-size:13px;color:#999;margin-bottom:28px;line-height:1.7}
 .status{font-size:15px;color:#333;font-weight:600;margin-bottom:10px;min-height:24px}
 .bar-wrap{width:100%;height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-bottom:28px}
 .bar{height:100%;background:#00b900;border-radius:3px;transition:width .4s ease;width:0%}
-.btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:700;cursor:pointer;display:none;margin-top:6px}
+.btn{width:100%;padding:15px;border-radius:12px;border:none;font-size:16px;font-weight:700;cursor:pointer;display:none;margin-top:8px;font-family:inherit}
 .btn-green{background:#00b900;color:#fff}
+.btn-blue{background:#007aff;color:#fff}
 .btn-gray{background:#f0f0f0;color:#666}
 .err-box{background:#fff0f0;border-radius:10px;padding:14px;color:#c62828;font-size:13px;line-height:1.6;margin-top:16px;display:none;text-align:left}
 </style>
@@ -29,56 +30,88 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="sub" id="sub">正在準備你的名片...</div>
   <div class="status" id="status">⏳ 初始化中...</div>
   <div class="bar-wrap"><div class="bar" id="bar"></div></div>
-  <button class="btn btn-green" id="btn-share" onclick="doShare()">📤 選擇傳送對象</button>
-  <button class="btn btn-gray" id="btn-retry" onclick="location.reload()">🔄 重試</button>
+  <button class="btn btn-green" id="btn-share" onclick="doShare()">📤 分享給好友</button>
+  <button class="btn btn-blue"  id="btn-send"  onclick="doSend()">💬 傳送到此聊天室</button>
+  <button class="btn btn-gray"  id="btn-retry" onclick="location.reload()">🔄 重試</button>
   <div class="err-box" id="err"></div>
 </div>
 
 <script>
 const LIFF_ID = '2009436722-02IEHSWP';
-const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
-const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
+const SB_URL  = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
+const SB_KEY  = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
 const LATEST_KEY = 'tag_latest_card_id';
 let pendingMsg = null;
 
-const $  = id => document.getElementById(id);
+const $   = id => document.getElementById(id);
 const setP  = p  => $('bar').style.width = p + '%';
-const setSt = t  => { $('status').textContent = t; }
-const setSub= t  => { $('sub').textContent = t; }
+const setSt = t  => $('status').textContent = t;
+const setSub = t => $('sub').textContent = t;
 
 function showErr(msg) {
   $('err').style.display = 'block';
-  $('err').textContent = '❌ ' + msg;
+  $('err').textContent   = '❌ ' + msg;
   $('btn-retry').style.display = 'block';
   setSt('發生錯誤');
-  setP(0);
 }
 
+// 分享給好友（需要 isInClient）
 async function doShare() {
   try {
     $('btn-share').style.display = 'none';
+    $('btn-send').style.display  = 'none';
     setSt('📤 開啟選人畫面...');
     const result = await liff.shareTargetPicker([pendingMsg]);
-    if (result) {
+    if (result && result.status === 'success') {
       setSt('✅ 名片已發送！');
       setSub('對方已收到你的名片 🎉');
       setP(100);
-      setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 2000);
+      setTimeout(() => { try { liff.closeWindow(); } catch(e){} }, 2000);
     } else {
       setSt('已取消');
-      $('btn-share').style.display = 'block';
+      showButtons();
     }
   } catch(e) {
-    showErr('發送失敗：' + e.message);
+    showErr('分享失敗：' + e.message);
+  }
+}
+
+// 直接傳到目前聊天室（更可靠）
+async function doSend() {
+  try {
+    $('btn-share').style.display = 'none';
+    $('btn-send').style.display  = 'none';
+    setSt('💬 傳送中...');
+    await liff.sendMessages([pendingMsg]);
+    setSt('✅ 名片已傳送！');
+    setSub('名片已傳送到此聊天室 🎉');
+    setP(100);
+    setTimeout(() => { try { liff.closeWindow(); } catch(e){} }, 2000);
+  } catch(e) {
+    showErr('傳送失敗：' + e.message);
+  }
+}
+
+function showButtons() {
+  const inClient = liff.isInClient();
+  const canShare = inClient && liff.isApiAvailable('shareTargetPicker');
+  const canSend  = inClient;
+  
+  if (canShare) $('btn-share').style.display = 'block';
+  if (canSend)  $('btn-send').style.display  = 'block';
+  
+  if (!inClient) {
+    setSt('⚠️ 請用手機 LINE 開啟');
+    setSub('請在手機 LINE 聊天室中開啟此連結才能發送名片');
+  } else {
+    setSt('✅ 準備完成！');
+    setSub('選擇傳送方式');
   }
 }
 
 function getPid() {
-  // 1. URL 直接有 pid
   const sp = new URLSearchParams(location.search);
   if (sp.get('pid')) return sp.get('pid');
-
-  // 2. liff.state 裡有 pid（LIFF 跳轉後會把原本的 query 放這裡）
   const liffState = sp.get('liff.state');
   if (liffState) {
     try {
@@ -87,16 +120,12 @@ function getPid() {
       if (p.get('pid')) return p.get('pid');
     } catch(e) {}
   }
-
-  // 3. sessionStorage（登入後回來用）
   return sessionStorage.getItem(LATEST_KEY);
 }
 
 (async function main() {
   try {
     setP(10); setSt('⏳ 載入 SDK...');
-
-    // 等 SDK
     let w = 0;
     while (typeof liff === 'undefined' && w < 10000) {
       await new Promise(r => setTimeout(r, 200)); w += 200;
@@ -107,11 +136,9 @@ function getPid() {
     await liff.init({ liffId: LIFF_ID });
     setP(45);
 
-    // 取得 pid（init 後 liff.state 才會被解析到 URL）
     const pid = getPid();
     if (pid) sessionStorage.setItem(LATEST_KEY, pid);
 
-    // 未登入 → 存 pid → 登入
     if (!liff.isLoggedIn()) {
       setSt('🔐 請登入 LINE...');
       liff.login({ redirectUri: location.href });
@@ -119,27 +146,25 @@ function getPid() {
     }
 
     setP(65); setSt('⏳ 讀取名片資料...');
-
     const usePid = pid || sessionStorage.getItem(LATEST_KEY);
     if (!usePid) throw new Error('找不到名片資料，請先在電腦按「發布」');
 
     const sb = supabase.createClient(SB_URL, SB_KEY);
     const { data: row, error } = await sb.from('card').select('data').eq('id', usePid).single();
     if (error) throw new Error('讀取失敗：' + error.message);
-    if (!row)  throw new Error('找不到名片，請重新從電腦發布');
+    if (!row)  throw new Error('找不到名片，請重新發布');
 
     const state = JSON.parse(row.data);
     if (!state.pendingMsg) throw new Error('名片資料不完整，請重新發布');
     pendingMsg = state.pendingMsg;
 
-    setP(90); setSt('✅ 準備完成！');
-    setSub('點下方按鈕選擇傳送對象');
-    $('btn-share').style.display = 'block';
+    setP(90);
+    showButtons();
 
-    // 在 LINE 內建瀏覽器自動觸發
+    // 在 LINE 內建瀏覽器自動觸發傳送
     if (liff.isInClient()) {
       await new Promise(r => setTimeout(r, 600));
-      doShare();
+      doSend();
     }
 
   } catch(e) {
