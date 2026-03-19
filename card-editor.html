@@ -1859,9 +1859,9 @@ window.addEventListener('load', async function(){
     if(!liff.isLoggedIn()) return;
 
     // 登入後回來，有待發訊息
-    const pending = sessionStorage.getItem(LIFF_MSG_KEY);
+    const pending = localStorage.getItem(LIFF_MSG_KEY);
     if(!pending) return;
-    sessionStorage.removeItem(LIFF_MSG_KEY);
+    localStorage.removeItem(LIFF_MSG_KEY);
 
     const msg = JSON.parse(pending);
     if(!liff.isApiAvailable('shareTargetPicker')){
@@ -1919,7 +1919,7 @@ async function openOrig(){
 
     // 未登入 → 先存訊息，跳去登入
     if(!liff.isLoggedIn()){
-      sessionStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
+      localStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
       liff.login({ redirectUri: location.href });
       return;
     }
