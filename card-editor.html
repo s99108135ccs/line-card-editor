@@ -1863,9 +1863,31 @@ window.addEventListener('load', async function(){
 
     await initLiff();
 
-    // 手機掃碼進來：URL 帶 bin 參數
-    const urlParams = new URLSearchParams(location.search);
-    const binId = urlParams.get('bin') || sessionStorage.getItem('pending_bin');
+    // 手機掃碼進來：從各種位置讀取 bin 參數
+    let binId = sessionStorage.getItem('pending_bin');
+    if(!binId){
+      try{
+        // location.search 直接讀
+        const sp = new URLSearchParams(location.search);
+        binId = sp.get('bin');
+
+        // liff.state 裡面讀（LIFF 跳轉後 query 會放這裡）
+        if(!binId){
+          const liffState = sp.get('liff.state');
+          if(liffState){
+            const decoded = decodeURIComponent(liffState);
+            const stateSp = new URLSearchParams(decoded.startsWith('?') ? decoded.slice(1) : decoded);
+            binId = stateSp.get('bin');
+          }
+        }
+
+        // hash 讀
+        if(!binId && location.hash){
+          binId = new URLSearchParams(location.hash.slice(1)).get('bin');
+        }
+      } catch(e){ console.warn('binId parse error:', e); }
+    }
+    console.log('binId:', binId, 'search:', location.search, 'hash:', location.hash);
 
     if(binId){
       sessionStorage.removeItem('pending_bin');
@@ -1874,11 +1896,9 @@ window.addEventListener('load', async function(){
         liff.login({ redirectUri: location.href });
         return;
       }
-      // 從 JSONbin 讀取名片資料
+      // 從 JSONbin 讀取名片資料（bin 設為 public，不需要 key）
       toast('⏳ 讀取名片資料...');
-      const jsonbinKey = (document.getElementById('jsonbin-key')?.value||'').trim();
-      const headers = jsonbinKey ? { 'X-Master-Key': jsonbinKey } : {};
-      const binRes = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', { headers });
+      const binRes = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest');
       if(!binRes.ok) throw new Error('讀取資料失敗 ' + binRes.status);
       const binData = await binRes.json();
       const msg = binData.record.msg;
@@ -1968,6 +1988,7 @@ async function openOrig(){
     const binData = await binRes.json();
     const binId = binData.metadata.id;
     const shareUrl = 'https://liff.line.me/' + LIFF_ID + '?bin=' + binId;
+    // liff.state 格式備用（LIFF 跳轉時會保留）
     showShareQR(shareUrl);
 
   } catch(err){
