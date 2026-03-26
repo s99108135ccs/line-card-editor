@@ -1918,8 +1918,13 @@ window.addEventListener('load', async function(){
       const compressed = pako.deflate(msgStr);
       const b64 = btoa(String.fromCharCode(...compressed))
         .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
-      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?gz=' + b64;
-      showShareQR(shareUrl);
+      const storedPid = localStorage.getItem('liff_project_id');
+      if(storedPid){
+        const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + storedPid;
+        showShareQR(shareUrl);
+      } else {
+        toast('❌ 找不到名片 ID，請重新點選「發布到 LINE」');
+      }
       return;
     }
 
@@ -1983,7 +1988,10 @@ async function openOrig(){
 
     // 直接發送
     if(!liff.isApiAvailable('shareTargetPicker')){
-      throw new Error('此環境不支援 shareTargetPicker');
+      // shareTargetPicker 不可用時，改用 QR code 讓用戶在 LINE 內開啟分享頁
+      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
+      showShareQR(shareUrl);
+      return;
     }
     toast('📤 開啟 LINE 分享...');
     const result = await liff.shareTargetPicker([msg]);
