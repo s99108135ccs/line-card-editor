@@ -1929,9 +1929,7 @@ window.addEventListener('load', async function(){
     }
 
     toast('📤 開啟 LINE 分享...');
-    const result = await liff.shareTargetPicker([msg]);
-    if(result){ toast('✅ 名片已發送！'); }
-    else { toast('ℹ️ 已取消分享'); }
+    // shareTargetPicker 已移除，改由 QR code 流程處理
   } catch(e){ console.warn('LIFF load check failed:', e.message); }
 });
 
@@ -1986,17 +1984,9 @@ async function openOrig(){
       return;
     }
 
-    // 直接發送
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      // shareTargetPicker 不可用時，改用 QR code 讓用戶在 LINE 內開啟分享頁
-      const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
-      showShareQR(shareUrl);
-      return;
-    }
-    toast('📤 開啟 LINE 分享...');
-    const result = await liff.shareTargetPicker([msg]);
-    if(result){ toast('✅ 名片已發送！'); }
-    else { toast('ℹ️ 已取消分享'); }
+    // 直接顯示 QR code，讓使用者在 LINE 內掃描後自動傳送
+    const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
+    showShareQR(shareUrl);
 
   } catch(err){
     console.error(err);
