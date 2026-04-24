@@ -952,7 +952,9 @@ function newCard(){
     desc:'', descColor:'#555555',
     link:'', bgColor:'#ffffff',
     bgImgData:'', bgImgUrl:'',
+    bgFlipX: false,         // 背景水平翻轉
     avatarData:'', avatarUrl:'',
+    avatarFlipX: false,      // 大頭照水平翻轉
     avatarSize: 'md',
     avatarPos:  'left',
     avatarShape:'circle',
@@ -1106,8 +1108,9 @@ function renderFields(){
   // 背景圖區塊
   const bgSrc = c.bgImgData || (c.bgImgUrl && c.bgImgUrl !== '[本地圖片]' ? c.bgImgUrl : '');
   const bgZone = bgSrc ? `
-    <img class="img-layer-thumb" src="${bgSrc}">
+    <img class="img-layer-thumb" src="${bgSrc}" style="${c.bgFlipX?'transform:scaleX(-1);':''}">
     <div class="img-layer-actions">
+      <button class="img-layer-edit${c.bgFlipX?' on':''}" onclick="toggleBgFlip(event)" title="水平翻轉">↔️</button>
       <button class="img-layer-edit" onclick="reEditBg(event)">✏️ 裁切</button>
       <button class="img-layer-clear" onclick="clearBg(event)">✕</button>
     </div>` : `
@@ -1120,8 +1123,9 @@ function renderFields(){
   const avSrc = c.avatarData || (c.avatarUrl && c.avatarUrl !== '[本地圖片]' ? c.avatarUrl : '');
   const avShapeClass = c.avatarShape === 'circle' ? 'circle' : c.avatarShape === 'rounded' ? 'rounded-thumb' : 'square-thumb';
   const avZone = avSrc ? `
-    <img class="img-layer-thumb ${avShapeClass}" src="${avSrc}">
+    <img class="img-layer-thumb ${avShapeClass}" src="${avSrc}" style="${c.avatarFlipX?'transform:scaleX(-1);':''}">
     <div class="img-layer-actions">
+      <button class="img-layer-edit${c.avatarFlipX?' on':''}" onclick="toggleAvFlip(event)" title="水平翻轉">↔️</button>
       <button class="img-layer-edit" onclick="reEditAv(event)">✏️ 裁切</button>
       <button class="img-layer-clear" onclick="clearAv(event)">✕</button>
     </div>
@@ -1306,6 +1310,17 @@ function reEditBg(e){
 function clearBg(e){
   e.stopPropagation();
   G.cards[G.cur].bgImgData='';G.cards[G.cur].bgImgUrl='';
+  G.cards[G.cur].bgFlipX=false;
+  renderFields();render();
+}
+function toggleBgFlip(e){
+  e.stopPropagation();
+  G.cards[G.cur].bgFlipX=!G.cards[G.cur].bgFlipX;
+  renderFields();render();
+}
+function toggleAvFlip(e){
+  e.stopPropagation();
+  G.cards[G.cur].avatarFlipX=!G.cards[G.cur].avatarFlipX;
   renderFields();render();
 }
 
@@ -1341,6 +1356,7 @@ function reEditAv(e){
 function clearAv(e){
   e.stopPropagation();
   G.cards[G.cur].avatarData='';G.cards[G.cur].avatarUrl='';
+  G.cards[G.cur].avatarFlipX=false;
   renderFields();render();
 }
 
@@ -1410,7 +1426,15 @@ function composeHero(c){
       img.onload=()=>{
         const scale=Math.max(W/img.width,H/img.height);
         const iw=img.width*scale, ih=img.height*scale;
-        ctx.drawImage(img,(W-iw)/2,(H-ih)/2,iw,ih);
+        if(c.bgFlipX){
+          ctx.save();
+          ctx.translate(W, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(img,(W-iw)/2,(H-ih)/2,iw,ih);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img,(W-iw)/2,(H-ih)/2,iw,ih);
+        }
         res();
       };
       img.onerror=()=>res();
@@ -1458,7 +1482,13 @@ function composeHero(c){
         // draw avatar image
         const s=Math.max(avW/img.width,avH/img.height);
         const iw=img.width*s,ih=img.height*s;
-        ctx.drawImage(img,x+(avW-iw)/2,y+(avH-ih)/2,iw,ih);
+        if(c.avatarFlipX){
+          ctx.translate(x+avW, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(img, (avW-iw)/2, y+(avH-ih)/2, iw, ih);
+        } else {
+          ctx.drawImage(img,x+(avW-iw)/2,y+(avH-ih)/2,iw,ih);
+        }
         ctx.restore();
 
         // (no border stroke - allows avatar to blend naturally with background)
@@ -1644,13 +1674,13 @@ function render(){
       <div class="av-wrap" data-card="${i}"
         style="position:absolute;bottom:7px;left:${avBaseLeft};right:${avBaseRight};width:${avW}px;height:${avH}px;z-index:2;touch-action:none;cursor:move;transform:${avTransform} translate(${avX}px,${avY}px)">
         <img src="${avSrc}" class="av-draggable" data-card="${i}"
-          style="width:100%;height:100%;${avShapeStyle};object-fit:cover;display:block;pointer-events:none;user-select:none">
+          style="width:100%;height:100%;${avShapeStyle};object-fit:cover;display:block;pointer-events:none;user-select:none;${c.avatarFlipX?'transform:scaleX(-1);':''}">
         <div class="av-sz-handle" data-card="${i}"
           style="position:absolute;bottom:-7px;right:-7px;width:16px;height:16px;background:#00b900;border:2.5px solid #fff;border-radius:50%;cursor:se-resize;z-index:5;touch-action:none"></div>
       </div>
       <div class="av-drag-hint">拖移調整位置 · 右下角或滾輪縮放</div>
     `:'';
-    const bgEl=bgSrc?`<img src="${bgSrc}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:'';
+    const bgEl=bgSrc?`<img src="${bgSrc}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;${c.bgFlipX?'transform:scaleX(-1);':''}">`:'';
     const heroContent=bgSrc||avSrc
       ?`${bgEl}${avatarEl}`
       :`<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
