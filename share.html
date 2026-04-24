@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta name="theme-color" content="#0d0d0d">
+<title>數位名片</title>
+
+<!-- OG tags (will be patched by JS after load) -->
+<meta property="og:title" content="數位名片">
+<meta property="og:description" content="THE TAG 數位版名片">
+<meta property="og:type" content="profile">
+<meta property="og:image" content="">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+
+:root {
+  --page-bg: #0d0d0d;
+  --page-fg: #f5f5f5;
+  --page-muted: #999;
+  --page-border: rgba(255,255,255,.08);
+  --accent: #e8791e;
+  --accent-hover: #ff8c35;
+  --danger: #e53935;
+  --success: #00b900;
+  --card-shadow: 0 20px 60px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.3);
+  --radius: 18px;
+  --mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+}
+
+html, body {
+  background: var(--page-bg);
+  color: var(--page-fg);
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ═══ Top brand ═══ */
+.brand {
+  padding: 18px 20px 8px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.brand-mark {
+  font-size: 11px;
+  letter-spacing: .3em;
+  color: var(--page-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* ═══ Loading ═══ */
+#loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 40px;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid rgba(232,121,30,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--page-muted); font-size: 13px; }
+
+/* ═══ Error ═══ */
+#error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 14px;
+}
+.error-icon { font-size: 48px; opacity: .4; }
+.error-title { font-size: 18px; font-weight: 700; }
+.error-msg { color: var(--page-muted); font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+/* ═══ Cards area ═══ */
+#content { flex: 1; }
+
+.cards-wrap {
+  padding: 8px 16px 140px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+@media (min-width: 640px) {
+  .cards-wrap {
+    padding: 24px 24px 180px;
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 18px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: cardIn .5s forwards ease-out;
+}
+.card:nth-child(1){ animation-delay: .05s; }
+.card:nth-child(2){ animation-delay: .15s; }
+.card:nth-child(3){ animation-delay: .25s; }
+.card:nth-child(4){ animation-delay: .35s; }
+.card:nth-child(n+5){ animation-delay: .45s; }
+@keyframes cardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-hero {
+  position: relative;
+  width: 100%;
+  background: #eee;
+  overflow: hidden;
+}
+.card-hero img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.card-hero[data-link] { cursor: pointer; }
+
+.card-body {
+  padding: 16px 18px;
+}
+.card-title {
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.card-desc {
+  margin-top: 6px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.card-footer {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-footer.half {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .15s, filter .15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+}
+.card-btn:active { transform: scale(.97); }
+.card-btn:hover { filter: brightness(1.05); }
+.card-btn.style-primary { color: #fff; }
+.card-btn.style-secondary { color: #000; }
+.card-btn.style-link { background: transparent !important; text-decoration: underline; }
+
+/* ═══ Size mapping (LINE Flex → CSS) ═══ */
+.size-xs { font-size: 11px; }
+.size-sm { font-size: 13px; }
+.size-md { font-size: 15px; }
+.size-lg { font-size: 18px; }
+.size-xl { font-size: 22px; }
+.size-xxl { font-size: 28px; }
+
+.btn-sm { height: 40px; font-size: 13px; }
+.btn-md { height: 52px; font-size: 15px; }
+.btn-lg { height: 60px; font-size: 16px; }
+
+/* ═══ Action bar (fixed bottom) ═══ */
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(13,13,13,.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--page-border);
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0)) 14px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  z-index: 10;
+}
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--page-fg);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  line-height: 1;
+}
+.action-btn:active { transform: scale(.95); }
+.action-btn:hover {
+  background: rgba(232,121,30,.1);
+  border-color: rgba(232,121,30,.3);
+  color: var(--accent);
+}
+.action-btn .ic {
+  font-size: 20px;
+  line-height: 1;
+}
+.action-btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.action-btn.primary:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+.action-btn.hidden { display: none; }
+
+/* ═══ Toast ═══ */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(100px + env(safe-area-inset-bottom, 0));
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20,20,20,.95);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 1000;
+  opacity: 0;
+  transition: all .25s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  border: 1px solid var(--page-border);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ═══ Powered by ═══ */
+.powered {
+  text-align: center;
+  padding: 14px 20px 24px;
+  font-size: 10px;
+  color: rgba(255,255,255,.25);
+  letter-spacing: .1em;
+}
+.powered a {
+  color: inherit;
+  text-decoration: none;
+}
+.powered a:hover { color: var(--accent); }
+
+/* ═══ Modal ═══ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal {
+  background: #161616;
+  border: 1px solid var(--page-border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  transform: scale(.9);
+  transition: transform .2s;
+}
+.modal-overlay.show .modal { transform: scale(1); }
+.modal h3 { font-size: 17px; margin-bottom: 6px; font-weight: 800; }
+.modal p { color: var(--page-muted); font-size: 13px; margin-bottom: 18px; line-height: 1.6; }
+.modal img.qr { width: 220px; height: 220px; border-radius: 10px; background: #fff; padding: 10px; margin: 0 auto 14px; display: block; }
+.modal-close {
+  background: rgba(255,255,255,.08);
+  border: none;
+  color: var(--page-fg);
+  padding: 10px 24px;
+  border-radius: 100px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.modal-close:hover { background: rgba(255,255,255,.15); }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <div class="brand-mark">THE TAG · Digital Card</div>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">載入名片中…</div>
+</div>
+
+<div id="error" hidden>
+  <div class="error-icon">🔍</div>
+  <div class="error-title">找不到這張名片</div>
+  <div class="error-msg" id="error-msg">連結可能已失效或格式錯誤。請確認 URL 是否正確。</div>
+</div>
+
+<main id="content" hidden>
+  <div class="cards-wrap" id="cards"></div>
+  <div class="powered">
+    <a href="https://thetag.tw" target="_blank" rel="noopener">橫流視覺影像 THE TAG</a>
+  </div>
+</main>
+
+<div class="action-bar" id="action-bar" hidden>
+  <button class="action-btn" data-act="vcard">
+    <span class="ic">📇</span>
+    <span>存通訊錄</span>
+  </button>
+  <button class="action-btn" data-act="copy">
+    <span class="ic">🔗</span>
+    <span>複製連結</span>
+  </button>
+  <button class="action-btn" data-act="share">
+    <span class="ic">📤</span>
+    <span>分享</span>
+  </button>
+  <button class="action-btn primary hidden" data-act="line" id="btn-line">
+    <span class="ic">💬</span>
+    <span>傳到 LINE</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- QR modal -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal">
+    <h3>📱 掃描分享</h3>
+    <p>用手機對準 QR code 開啟名片</p>
+    <img class="qr" id="qr-img" src="" alt="QR Code">
+    <button class="modal-close" onclick="closeQR()">關閉</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
+const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
+const LIFF_ID = '2009436722-02IEHSWP'; // SHARE_LIFF_ID, for progressive enhancement
+
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function getCardId() {
+  const q = new URLSearchParams(location.search);
+  return q.get('id') || q.get('pid') || null;
+}
+
+let _toastTimer = null;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function showError(msg) {
+  $('#loading').hidden = true;
+  $('#content').hidden = true;
+  $('#action-bar').hidden = true;
+  if (msg) $('#error-msg').textContent = msg;
+  $('#error').hidden = false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DATA FETCH
+// ═══════════════════════════════════════════════════════════════
+async function fetchCard(id) {
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const { data: row, error } = await sb.from('card').select('*').eq('id', id).single();
+  if (error) throw error;
+  if (!row) throw new Error('找不到名片資料');
+  let state;
+  try {
+    state = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+  } catch (e) {
+    throw new Error('名片資料格式錯誤：' + e.message);
+  }
+  return { row, state };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════
+function parseRatio(r) {
+  const m = String(r || '20:13').match(/^(\d+)\s*:\s*(\d+)$/);
+  if (!m) return '20 / 13';
+  return `${m[1]} / ${m[2]}`;
+}
+
+function renderCards(state) {
+  const cards = (state.cards || []).filter(c => c && (c.title || c.desc || c.bgImgUrl || c.buttons?.length));
+  if (!cards.length) {
+    showError('這張名片還沒有內容');
+    return;
+  }
+
+  // Use pendingMsg hero URLs if available (已合成+ImgBB) — preferred
+  const pendingCards = state.pendingMsg?.contents?.contents || [];
+  const getHero = (idx, card) => {
+    const fromPending = pendingCards[idx]?.hero?.url;
+    if (fromPending) return fromPending;
+    return card.bgImgUrl || card.bgImgData || '';
+  };
+
+  const ratio = parseRatio(state.ratio);
+  const titleSize = state.titleSize || 'md';
+  const descSize = state.descSize || 'sm';
+  const btnSize = state.btnSize || 'md';
+  const btnWidth = state.btnWidth || 'full';
+
+  const wrap = $('#cards');
+  wrap.innerHTML = cards.map((c, i) => {
+    const hero = getHero(i, c);
+    const heroHtml = hero
+      ? `<div class="card-hero" style="aspect-ratio:${ratio};${c.link ? 'cursor:pointer' : ''}" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
+           <img src="${esc(hero)}" alt="${esc(c.title || '')}" loading="lazy">
+         </div>`
+      : '';
+
+    const titleHtml = c.title
+      ? `<div class="card-title size-${titleSize}" style="color:${esc(c.titleColor || '#111')}">${esc(c.title)}</div>`
+      : `<div class="card-title size-${titleSize}" style="color:${esc(c.titleColor || '#111')}; opacity:.4">（無標題）</div>`;
+
+    const descHtml = c.desc
+      ? `<div class="card-desc size-${descSize}" style="color:${esc(c.descColor || '#555')}">${esc(c.desc)}</div>`
+      : '';
+
+    const buttonsHtml = (c.buttons || []).map(b => {
+      const label = b.label || '按鈕';
+      const link = b.link || '#';
+      const style = b.style || 'primary';
+      const bg = style === 'link' ? 'transparent' : (b.color || '#00b900');
+      const color = style === 'primary' ? '#fff' : (style === 'secondary' ? '#000' : (b.color || '#00b900'));
+      return `<a class="card-btn btn-${btnSize} style-${esc(style)}"
+                 href="${esc(link)}"
+                 target="${link.startsWith('tel:') || link.startsWith('mailto:') ? '_self' : '_blank'}"
+                 rel="noopener"
+                 style="background:${esc(bg)};color:${esc(color)}">${esc(label)}</a>`;
+    }).join('');
+
+    const footerClass = btnWidth === 'half' ? 'card-footer half' : 'card-footer';
+    const footerHtml = c.buttons?.length
+      ? `<div class="${footerClass}" style="background:${esc(c.footerBg || '#fff')}">${buttonsHtml}</div>`
+      : '';
+
+    return `<article class="card">
+      ${heroHtml}
+      <div class="card-body" style="background:${esc(c.bgColor || '#fff')}">
+        ${titleHtml}
+        ${descHtml}
+      </div>
+      ${footerHtml}
+    </article>`;
+  }).join('');
+
+  // Hero click → open link
+  wrap.querySelectorAll('.card-hero[data-link]').forEach(el => {
+    el.addEventListener('click', () => {
+      window.open(el.dataset.link, '_blank', 'noopener');
+    });
+  });
+
+  // OG tags patch
+  const firstTitle = cards[0]?.title || state.projectName || '數位名片';
+  const firstDesc = cards[0]?.desc || state.altText || 'THE TAG 數位版名片';
+  const firstImg = getHero(0, cards[0]);
+  document.title = firstTitle + ' · 數位名片';
+  document.querySelector('meta[property="og:title"]').content = firstTitle;
+  document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
+  if (firstImg && firstImg.startsWith('http')) {
+    document.querySelector('meta[property="og:image"]').content = firstImg;
+  }
+  document.querySelector('meta[property="og:url"]') ||
+    document.head.appendChild(Object.assign(document.createElement('meta'), {}));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════════
+
+// Build vCard from state
+function buildVCard(state) {
+  const cards = state.cards || [];
+  const c = cards[0] || {};
+  const name = c.title || state.projectName || '數位名片';
+  const desc = c.desc || '';
+
+  // Parse buttons: tel:, mailto:, https: → structured vCard fields
+  const buttons = cards.flatMap(cc => cc.buttons || []);
+  const tels = [];
+  const emails = [];
+  const urls = [];
+  for (const b of buttons) {
+    const link = b.link || '';
+    if (link.startsWith('tel:')) tels.push(link.slice(4));
+    else if (link.startsWith('mailto:')) emails.push(link.slice(7));
+    else if (/^https?:\/\//.test(link)) urls.push(link);
+  }
+  // Also include card.link
+  for (const cc of cards) {
+    if (cc.link && /^https?:\/\//.test(cc.link) && !urls.includes(cc.link)) urls.push(cc.link);
+  }
+
+  const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+  lines.push('FN:' + name);
+  if (desc) lines.push('NOTE:' + desc.replace(/\n/g, '\\n'));
+  tels.forEach(t => lines.push('TEL;TYPE=CELL:' + t));
+  emails.forEach(e => lines.push('EMAIL:' + e));
+  urls.forEach(u => lines.push('URL:' + u));
+  lines.push('END:VCARD');
+  return lines.join('\r\n');
+}
+
+function downloadVCard(state) {
+  const vcf = buildVCard(state);
+  const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (state.cards?.[0]?.title || state.projectName || 'contact').replace(/[^\w\u4e00-\u9fa5\-]/g, '_');
+  a.href = url;
+  a.download = name + '.vcf';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  toast('📇 通訊錄已下載');
+}
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    toast('🔗 連結已複製');
+  } catch (e) {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = location.href;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('🔗 連結已複製'); }
+    catch { toast('❌ 複製失敗，請手動選取'); }
+    ta.remove();
+  }
+}
+
+async function shareLink(state) {
+  const title = state.cards?.[0]?.title || '數位名片';
+  const text = state.altText || '請查看數位名片';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url: location.href });
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('❌ ' + e.message);
+    }
+  } else {
+    // Fallback: show QR modal
+    showQR(location.href);
+  }
+}
+
+function showQR(url) {
+  $('#qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=' + encodeURIComponent(url);
+  $('#qr-modal').classList.add('show');
+}
+window.closeQR = function() {
+  $('#qr-modal').classList.remove('show');
+};
+
+// LIFF send to LINE friend (progressive enhancement)
+async function sendToLine(state) {
+  if (typeof liff === 'undefined') {
+    toast('❌ LINE SDK 未載入');
+    return;
+  }
+  try {
+    if (!liff.isApiAvailable('shareTargetPicker')) {
+      // Fallback: open in LINE (let LINE app handle)
+      window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
+      return;
+    }
+    const msg = state.pendingMsg;
+    if (!msg) {
+      toast('❌ 找不到 Flex 訊息資料');
+      return;
+    }
+    toast('📤 開啟分享…');
+    const res = await liff.shareTargetPicker([msg]);
+    if (res?.status === 'success') {
+      toast('✅ 分享成功');
+    }
+  } catch (e) {
+    console.error(e);
+    toast('❌ 分享失敗：' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LIFF PROGRESSIVE ENHANCEMENT
+// ═══════════════════════════════════════════════════════════════
+async function initLiffOptional() {
+  if (typeof liff === 'undefined') return false;
+  try {
+    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: false });
+    const isInClient = liff.isInClient();
+    const canShare = liff.isApiAvailable?.('shareTargetPicker');
+    if (isInClient || canShare) {
+      $('#btn-line').classList.remove('hidden');
+      return true;
+    }
+  } catch (e) {
+    console.warn('LIFF init skipped:', e.message);
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN
+// ═══════════════════════════════════════════════════════════════
+(async function main() {
+  const id = getCardId();
+  if (!id) {
+    showError('URL 缺少名片 ID。正確格式：share.html?id=xxxx');
+    return;
+  }
+
+  let state;
+  try {
+    const { state: s } = await fetchCard(id);
+    state = s;
+  } catch (e) {
+    console.error(e);
+    if (String(e.message || e).includes('Row not found') || e.code === 'PGRST116') {
+      showError('找不到這張名片，可能已被刪除');
+    } else {
+      showError('載入失敗：' + (e.message || '請稍後再試'));
+    }
+    return;
+  }
+
+  renderCards(state);
+
+  $('#loading').hidden = true;
+  $('#content').hidden = false;
+  $('#action-bar').hidden = false;
+
+  // Bind action buttons
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = btn.dataset.act;
+      if (act === 'vcard') downloadVCard(state);
+      else if (act === 'copy') copyLink();
+      else if (act === 'share') shareLink(state);
+      else if (act === 'line') sendToLine(state);
+    });
+  });
+
+  // Try progressive enhance LIFF
+  initLiffOptional();
+})();
+</script>
+
+</body>
+</html>

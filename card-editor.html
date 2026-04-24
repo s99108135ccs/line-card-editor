@@ -1912,24 +1912,13 @@ window.addEventListener('load', async function(){
     localStorage.removeItem(LIFF_MSG_KEY);
 
     const msg = JSON.parse(pending);
-    if(!liff.isApiAvailable('shareTargetPicker')){
-      // 不支援就改用 QR code
-      const msgStr = JSON.stringify(msg);
-      const compressed = pako.deflate(msgStr);
-      const b64 = btoa(String.fromCharCode(...compressed))
-        .replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=/g, '');
-      const storedPid = localStorage.getItem('liff_project_id');
-      if(storedPid){
-        const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + storedPid;
-        showShareQR(shareUrl);
-      } else {
-        toast('❌ 找不到名片 ID，請重新點選「發布到 LINE」');
-      }
+    const storedPid = localStorage.getItem('liff_project_id');
+    if(!storedPid){
+      toast('❌ 找不到名片 ID，請重新點選「發布到 LINE」');
       return;
     }
-
-    toast('📤 開啟 LINE 分享...');
-    // shareTargetPicker 已移除，改由 QR code 流程處理
+    // 登入完回來 → 直接顯示發布結果 dialog（含複製連結 + QR + 可選 LIFF 分享）
+    showPublishResult(storedPid, msg);
   } catch(e){ console.warn('LIFF load check failed:', e.message); }
 });
 
@@ -1984,14 +1973,144 @@ async function openOrig(){
       return;
     }
 
-    // 直接顯示 QR code，讓使用者在 LINE 內掃描後自動傳送
-    const shareUrl = 'https://liff.line.me/' + SHARE_LIFF_ID + '?pid=' + projectId;
-    showShareQR(shareUrl);
+    // 顯示發布結果 dialog（公開連結 + QR + LIFF 分享）
+    showPublishResult(projectId, msg);
 
   } catch(err){
     console.error(err);
     toast('❌ 失敗：'+err.message);
   }
+}
+
+// ══════════════════════════════════════════
+//  發布結果 Dialog（公開連結 + QR + LIFF 分享）
+// ══════════════════════════════════════════
+function buildPublicUrl(projectId){
+  // 相對於目前路徑（/line-card-editor/）的 share.html
+  const base = location.href.replace(/[^\/]*(\?.*)?$/, '');
+  return base + 'share.html?id=' + encodeURIComponent(projectId);
+}
+
+function showPublishResult(projectId, pendingMsg){
+  document.getElementById('share-qr-overlay')?.remove();
+  document.getElementById('publish-result-overlay')?.remove();
+
+  const publicUrl = buildPublicUrl(projectId);
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + encodeURIComponent(publicUrl);
+
+  // 檢查 LIFF 能不能直接 shareTargetPicker
+  let canShareInLiff = false;
+  try {
+    canShareInLiff = (typeof liff !== 'undefined') &&
+                     liff.isLoggedIn?.() &&
+                     liff.isApiAvailable?.('shareTargetPicker');
+  } catch(e){}
+
+  const overlay = document.createElement('div');
+  overlay.id = 'publish-result-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);font-family:inherit;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:26px 22px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);position:relative;max-height:90vh;overflow-y:auto">
+      <button id="pr-close" aria-label="關閉"
+        style="position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;font-size:24px;color:#aaa;line-height:1;padding:4px">✕</button>
+
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:32px;margin-bottom:4px">🎉</div>
+        <div style="font-size:17px;font-weight:800;color:#111">名片已發布</div>
+        <div style="font-size:12px;color:#888;margin-top:3px">選一種方式分享給客戶</div>
+      </div>
+
+      <!-- 公開連結（主） -->
+      <div style="background:#f5f5f7;border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#666;letter-spacing:.08em;margin-bottom:8px">🔗 公開分享連結</div>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <input id="pr-url" type="text" readonly value="${publicUrl.replace(/"/g,'&quot;')}"
+            style="flex:1;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-family:monospace;font-size:11px;color:#333;background:#fff;min-width:0">
+          <button id="pr-copy"
+            style="padding:9px 14px;background:#e8791e;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;white-space:nowrap">複製</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">
+          任何管道都能傳（LINE / IG / FB / Email / 簡訊）。點連結直接看名片，不需登入。
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <details style="background:#f5f5f7;border-radius:12px;padding:12px 14px;margin-bottom:12px">
+        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#333;user-select:none">📱 QR Code（線下用）</summary>
+        <div style="text-align:center;margin-top:12px">
+          <img src="${qrUrl}" alt="QR Code" style="width:200px;height:200px;border-radius:10px;border:1px solid #eee;background:#fff;padding:8px">
+          <div style="font-size:11px;color:#888;margin-top:6px">印在實體名片 / 展覽、現場掃碼</div>
+        </div>
+      </details>
+
+      ${canShareInLiff ? `
+      <!-- LIFF shareTargetPicker -->
+      <button id="pr-line-share"
+        style="width:100%;padding:13px;background:#00b900;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:8px">
+        💬 直接傳給 LINE 好友
+      </button>
+      ` : `
+      <!-- LIFF 還沒準備好（scope / 同意書 / isInClient 未滿足）-->
+      <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:11px;color:#8a6d3b;line-height:1.6">
+        💡 <b>想直接從這裡傳 LINE？</b><br>
+        LIFF 需要額外設定（scope + 同意書）才能在瀏覽器用 shareTargetPicker。暫時先用上面的「公開連結」分享。
+      </div>
+      `}
+
+      <button id="pr-dismiss"
+        style="width:100%;padding:11px;background:#f5f5f7;color:#333;border:none;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">完成</button>
+    </div>
+  `;
+
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#pr-close').onclick = () => overlay.remove();
+  overlay.querySelector('#pr-dismiss').onclick = () => overlay.remove();
+
+  // 複製連結
+  overlay.querySelector('#pr-copy').onclick = async () => {
+    const btn = overlay.querySelector('#pr-copy');
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      btn.textContent = '✓ 已複製';
+      btn.style.background = '#00b900';
+      setTimeout(()=>{ btn.textContent='複製'; btn.style.background='#e8791e'; }, 1800);
+    } catch(e){
+      // Fallback
+      overlay.querySelector('#pr-url').select();
+      document.execCommand('copy');
+      btn.textContent = '✓ 已複製';
+      setTimeout(()=>{ btn.textContent='複製'; }, 1800);
+    }
+  };
+
+  // 點輸入框自動選取
+  overlay.querySelector('#pr-url').onclick = (e) => e.target.select();
+
+  // LIFF 直接分享
+  const lineBtn = overlay.querySelector('#pr-line-share');
+  if (lineBtn) {
+    lineBtn.onclick = async () => {
+      try {
+        lineBtn.textContent = '⏳ 開啟 LINE 選人視窗...';
+        lineBtn.disabled = true;
+        const res = await liff.shareTargetPicker([pendingMsg]);
+        if (res?.status === 'success') {
+          toast('✅ 已分享到 LINE');
+          overlay.remove();
+        } else {
+          lineBtn.textContent = '💬 直接傳給 LINE 好友';
+          lineBtn.disabled = false;
+        }
+      } catch(e){
+        console.error(e);
+        toast('❌ 分享失敗：' + e.message);
+        lineBtn.textContent = '💬 直接傳給 LINE 好友';
+        lineBtn.disabled = false;
+      }
+    };
+  }
+
+  document.body.appendChild(overlay);
 }
 
 function showShareQR(shareUrl){
