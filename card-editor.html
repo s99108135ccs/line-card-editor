@@ -2150,19 +2150,28 @@ function attachHeroTitleDrag(){
   });
 }
 
-// debounced hero compose + JSON 更新（防止打字時瘋狂 canvas encode 卡死）
+// debounced hero compose + JSON 更新
+// 多卡片優化：平常只 compose「當前選中」那一張，其他卡用 placeholder
+// 真正要拿完整 8 張 hero 圖時（doShare / doCopy）會自己 compose
 let _heroJsonTimer = null;
+let _heroCache = []; // 每張卡的 last compose result（不會被清，只更新當前卡）
 function scheduleHeroJsonUpdate(){
   if(_heroJsonTimer) clearTimeout(_heroJsonTimer);
   _heroJsonTimer = setTimeout(async () => {
     try {
-      const heroDataUrls = await Promise.all(G.cards.map(c=>composeHero(c)));
+      // 只 compose 當前卡片，其他用 cache（或省略）
+      const curIdx = G.cur;
+      if(G.cards[curIdx]){
+        _heroCache[curIdx] = await composeHero(G.cards[curIdx]);
+      }
+      // 構建 hero array：當前卡用最新，其他用 cache（沒就空字串）
+      const heroDataUrls = G.cards.map((c, i) => _heroCache[i] || '');
       const el = document.getElementById('json-out');
       if(el) el.textContent = JSON.stringify(buildJson(heroDataUrls), null, 2);
     } catch(e){
       console.warn('compose failed', e);
     }
-  }, 800);
+  }, 600); // 800 → 600，反正只跑一張
 }
 
 // ══════════════════════════════════════════
