@@ -2022,10 +2022,24 @@ function render(){
   },50);
 
   document.getElementById('json-out').textContent='（產生中...）';
-  // async compose then update JSON
-  Promise.all(G.cards.map(c=>composeHero(c))).then(heroDataUrls=>{
-    document.getElementById('json-out').textContent=JSON.stringify(buildJson(heroDataUrls),null,2);
-  });
+  // composeHero 超慢（每張卡 canvas decode + encode base64 50-300ms）→ 必須 debounce
+  // 連續輸入時不會狂跑，停手 800ms 才執行一次
+  scheduleHeroJsonUpdate();
+}
+
+// debounced hero compose + JSON 更新（防止打字時瘋狂 canvas encode 卡死）
+let _heroJsonTimer = null;
+function scheduleHeroJsonUpdate(){
+  if(_heroJsonTimer) clearTimeout(_heroJsonTimer);
+  _heroJsonTimer = setTimeout(async () => {
+    try {
+      const heroDataUrls = await Promise.all(G.cards.map(c=>composeHero(c)));
+      const el = document.getElementById('json-out');
+      if(el) el.textContent = JSON.stringify(buildJson(heroDataUrls), null, 2);
+    } catch(e){
+      console.warn('compose failed', e);
+    }
+  }, 800);
 }
 
 // ══════════════════════════════════════════
