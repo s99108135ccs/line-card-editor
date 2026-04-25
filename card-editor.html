@@ -947,6 +947,7 @@ const BTN_COLORS = [
 //  STATE
 // ══════════════════════════════════════════
 let G = {
+  projectName:'未命名名片',
   altText:'請在手機上查看數位版名片。',
   ratio:'20:13',
   customColors:['#ffffff','#ffffff','#ffffff'],
@@ -2314,8 +2315,9 @@ async function renameProject(id, oldName){
       updated_at: new Date().toISOString()
     }).eq('id', id);
     if(error) throw error;
-    // 如果改的是目前正在編輯的專案，同步更新 localStorage 的 projectName
+    // 如果改的是目前正在編輯的專案，同步更新 G.projectName + localStorage
     if(getProjectId() === id){
+      G.projectName = trimmed;
       try{
         const cached = JSON.parse(localStorage.getItem('line-card-project')||'{}');
         cached.projectName = trimmed;
@@ -2545,6 +2547,7 @@ function getProjectState(){
   return {
     version: 2,
     savedAt: new Date().toISOString(),
+    projectName: G.projectName || '未命名名片',
     altText: G.altText,
     ratio: G.ratio,
     titleSize: G.titleSize,
@@ -2563,6 +2566,7 @@ function getProjectState(){
 
 function applyProjectState(state){
   if(!state || !state.cards) throw new Error('格式錯誤');
+  G.projectName = state.projectName || '未命名名片';
   G.altText = state.altText || '';
   G.ratio = state.ratio || '20:13';
   G.titleSize = state.titleSize || 'md';
