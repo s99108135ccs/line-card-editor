@@ -905,14 +905,23 @@ function stopNudge(){
 }
 
 // Keyboard arrow keys (only when crop modal is open)
+// 用 nudge RAF 機制，避免 keydown auto-repeat 一秒觸發 30 次 sync redraw 卡死
+let _heldArrow = null;
 document.addEventListener('keydown', e => {
   if(!document.getElementById('crop-overlay').classList.contains('open')) return;
-  const step = e.shiftKey ? 20 : 4;
-  const map = {ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]};
-  if(map[e.key]){
-    e.preventDefault();
-    const [cx,cy] = cropGetXY();
-    cropSetXY(cx+map[e.key][0], cy+map[e.key][1]);
+  const map = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+  if(!map[e.key]) return;
+  e.preventDefault();
+  if(e.repeat) return;          // 忽略瀏覽器 auto-repeat
+  if(_heldArrow === e.key) return; // 已經啟動 nudge
+  _heldArrow = e.key;
+  const step = e.shiftKey ? 6 : 2;
+  startNudge(map[e.key][0]*step, map[e.key][1]*step);
+});
+document.addEventListener('keyup', e => {
+  if(_heldArrow === e.key){
+    _heldArrow = null;
+    stopNudge();
   }
 });
 // Scroll wheel to zoom on crop canvas
