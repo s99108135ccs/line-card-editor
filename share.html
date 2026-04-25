@@ -503,12 +503,20 @@ function renderCards(state) {
   }
 
   const pendingCards = state.pendingMsg?.contents?.contents || [];
+  // 過濾 card-editor 的 '[本地圖片]' placeholder（非真 URL）
+  const isValidUrl = (s) => s && typeof s === 'string' && (s.startsWith('http') || s.startsWith('data:'));
   const getHero = (idx, card) => {
     const fromPending = pendingCards[idx]?.hero?.url;
-    if (fromPending) return fromPending;
-    return card.bgImgUrl || card.bgImgData || '';
+    if (isValidUrl(fromPending)) return fromPending;
+    if (isValidUrl(card.bgImgUrl)) return card.bgImgUrl;
+    if (isValidUrl(card.bgImgData)) return card.bgImgData;
+    return '';
   };
-  const getAvatar = (card) => card.avatarUrl || card.avatarData || '';
+  const getAvatar = (card) => {
+    if (isValidUrl(card.avatarUrl)) return card.avatarUrl;
+    if (isValidUrl(card.avatarData)) return card.avatarData;
+    return '';
+  };
 
   const ratio = parseRatio(state.ratio);
 
