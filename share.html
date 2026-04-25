@@ -415,7 +415,30 @@ const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 
 function getCardId() {
   const q = new URLSearchParams(location.search);
-  return q.get('id') || q.get('pid') || null;
+  let id = q.get('id') || q.get('pid');
+  if (id) return id;
+
+  // LIFF 把外部 query 包進 liff.state（URL-encoded query string）
+  // 例：?liff.state=%3Fid%3Dxxx 或 ?liff.state=id%3Dxxx
+  const liffState = q.get('liff.state');
+  if (liffState) {
+    let inner = liffState;
+    if (inner.startsWith('?')) inner = inner.substring(1);
+    try {
+      const innerQ = new URLSearchParams(inner);
+      id = innerQ.get('id') || innerQ.get('pid');
+      if (id) return id;
+    } catch (e) {}
+  }
+
+  // hash fallback (#id=xxx)
+  if (location.hash) {
+    const h = new URLSearchParams(location.hash.substring(1));
+    id = h.get('id') || h.get('pid');
+    if (id) return id;
+  }
+
+  return null;
 }
 
 let _toastTimer = null;
