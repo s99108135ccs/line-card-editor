@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#ffffff">
 <title>數位名片</title>
 
-<!-- OG tags (will be patched by JS after load) -->
 <meta property="og:title" content="數位名片">
 <meta property="og:description" content="THE TAG 數位版名片">
 <meta property="og:type" content="profile">
@@ -14,29 +13,30 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 
 :root {
-  --bg: #ffffff;
-  --fg: #000000;
-  --muted: #888888;
-  --line: #000000;
-  --line-soft: rgba(0,0,0,.08);
-  --accent: #cfff04;       /* 螢光黃綠 chartreuse */
-  --accent-deep: #b9e600;
-  --display: 'Bricolage Grotesque', 'Inter', 'Noto Sans TC', system-ui, sans-serif;
-  --body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
-  --mono: 'SF Mono', 'Menlo', monospace;
+  --bg: #f5f5f7;
+  --card-bg: #ffffff;
+  --text: #111111;
+  --text2: #666666;
+  --text3: #999999;
+  --line: rgba(0,0,0,.08);
+  --line-strong: rgba(0,0,0,.16);
+  --primary: #111111;
+  --font: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --r: 16px;
+  --r-btn: 10px;
 }
 
 html, body {
   background: var(--bg);
-  color: var(--fg);
-  font-family: var(--body);
+  color: var(--text);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   letter-spacing: -.005em;
@@ -47,68 +47,50 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  padding-bottom: 80px;  /* leave space for action-bar */
 }
 
-/* ═══ NAV ═══ */
+/* ═══ Top nav ═══ */
 .nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 14px 20px;
+  background: var(--card-bg);
   border-bottom: 1px solid var(--line);
 }
 .nav-mark {
-  font-family: var(--display);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: .02em;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.nav-mark::before {
-  content: '✱';
-  color: var(--accent-deep);
-  font-size: 18px;
-  line-height: 1;
+  letter-spacing: .04em;
 }
 .nav-meta {
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-family: var(--mono);
+  color: var(--text3);
+  letter-spacing: .08em;
 }
 
-/* ═══ LOADING ═══ */
+/* ═══ Loading ═══ */
 #loading {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   padding: 80px 24px;
 }
 .spinner {
   width: 32px; height: 32px;
-  border: 2px solid var(--line-soft);
-  border-top-color: var(--fg);
+  border: 2px solid var(--line);
+  border-top-color: var(--text);
   border-radius: 50%;
   animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-text {
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-family: var(--mono);
-}
+.loading-text { color: var(--text3); font-size: 12px; letter-spacing: .08em; }
 
-/* ═══ ERROR ═══ */
+/* ═══ Error ═══ */
 #error {
   flex: 1;
   display: flex;
@@ -117,409 +99,220 @@ body {
   flex-direction: column;
   padding: 80px 24px;
   text-align: center;
-  gap: 16px;
+  gap: 14px;
 }
-.error-mark {
-  font-family: var(--display);
-  font-size: 80px;
-  font-weight: 800;
-  letter-spacing: -.04em;
-  line-height: 1;
-}
-.error-title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: .02em;
-}
-.error-msg {
-  color: var(--muted);
-  font-size: 13px;
-  max-width: 320px;
-  line-height: 1.6;
-}
+.error-mark { font-size: 56px; opacity: .3; }
+.error-title { font-size: 16px; font-weight: 700; }
+.error-msg { color: var(--text2); font-size: 13px; max-width: 320px; line-height: 1.6; }
 
-/* ═══ MAIN CONTENT ═══ */
+/* ═══ Main ═══ */
 #content { flex: 1; }
-
-/* HERO */
-.hero {
-  padding: 32px 24px 24px;
-  position: relative;
-}
-.hero-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.hero-tag {
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-family: var(--mono);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.hero-tag::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background: var(--accent-deep);
-  border-radius: 50%;
-}
-.hero-date {
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-family: var(--mono);
-}
-.hero-title {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: clamp(48px, 14vw, 96px);
-  line-height: .95;
-  letter-spacing: -.04em;
-  word-break: break-word;
-  margin: 0 0 16px;
-}
-.hero-title .accent-mark {
-  color: var(--accent-deep);
-  display: inline-block;
-  margin-left: 8px;
-}
-.hero-sub {
-  font-family: var(--body);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.5;
-  color: var(--fg);
-  white-space: pre-wrap;
-  max-width: 540px;
-  margin-bottom: 8px;
-}
-
-/* MARQUEE — 滾動標籤條 */
-.marquee {
-  background: var(--accent);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  overflow: hidden;
-  padding: 10px 0;
-  white-space: nowrap;
-  position: relative;
-}
-.marquee-track {
-  display: inline-flex;
-  gap: 32px;
-  font-family: var(--display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  color: var(--fg);
-  animation: marquee 24s linear infinite;
-  padding-left: 32px;
-}
-.marquee-track span {
-  display: inline-flex;
-  align-items: center;
-  gap: 32px;
-}
-.marquee-track .dot {
-  width: 6px;
-  height: 6px;
-  background: var(--fg);
-  border-radius: 50%;
-}
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* HERO IMAGE */
-.hero-img-wrap {
-  padding: 0 24px;
-  margin-top: 24px;
-}
-.hero-img-wrap img,
-.hero-img-wrap .placeholder {
-  display: block;
-  width: 100%;
-  border-radius: 4px;
-  background: #f0f0f0;
-}
-.hero-img-wrap[data-link] { cursor: pointer; }
-.hero-img-wrap .placeholder {
-  aspect-ratio: 4/3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-/* ═══ SECTION (Connect / More) ═══ */
-.section {
-  padding: 48px 24px 16px;
-  border-top: 1px solid var(--line);
-  margin-top: 48px;
-}
-.section-tag {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.section-tag::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  background: var(--accent-deep);
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.section-title {
-  font-family: var(--display);
-  font-size: clamp(28px, 7vw, 48px);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -.03em;
-  margin-bottom: 32px;
-}
-
-/* CONNECT (link cards) */
-.connect-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  border-top: 1px solid var(--line-soft);
-}
-@media (min-width: 600px) {
-  .connect-grid { grid-template-columns: 1fr 1fr; }
-}
-.link-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 0;
-  text-decoration: none;
-  color: var(--fg);
-  font-family: var(--display);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -.02em;
-  border-bottom: 1px solid var(--line-soft);
-  transition: padding-left .25s ease, color .15s;
-  cursor: pointer;
-}
-@media (min-width: 600px) {
-  .connect-grid > .link-card:nth-child(odd) {
-    border-right: 1px solid var(--line-soft);
-    padding-right: 24px;
-  }
-  .connect-grid > .link-card:nth-child(even) {
-    padding-left: 24px;
-  }
-}
-.link-card:hover {
-  padding-left: 12px;
-  color: var(--accent-deep);
-}
-.link-card .arrow {
-  font-family: var(--display);
-  font-weight: 800;
-  transition: transform .2s;
-}
-.link-card:hover .arrow { transform: translateX(8px); }
-
-/* MORE CARDS (2nd, 3rd...) */
-.more-cards {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 32px;
-}
-@media (min-width: 700px) {
-  .more-cards { grid-template-columns: 1fr 1fr; }
-}
-.mini-card {
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  overflow: hidden;
-  background: #fff;
+.cards-wrap {
+  padding: 20px 16px 40px;
+  max-width: 480px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
-.mini-card-hero {
+@media (min-width: 600px) {
+  .cards-wrap { padding: 32px 24px 60px; }
+}
+
+/* ═══ Card ═══ */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+  opacity: 0;
+  transform: translateY(12px);
+  animation: cardIn .4s forwards ease-out;
+}
+.card:nth-child(1){ animation-delay: .05s; }
+.card:nth-child(2){ animation-delay: .15s; }
+.card:nth-child(n+3){ animation-delay: .25s; }
+@keyframes cardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card hero (background + avatar overlay) */
+.card-hero {
+  position: relative;
   width: 100%;
   background: #f0f0f0;
-  display: block;
-  position: relative;
+  overflow: hidden;
 }
-.mini-card-hero img {
+.card-hero[data-link] { cursor: pointer; }
+.card-hero img.bg {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.mini-card-body {
-  padding: 20px;
+.card-avatar {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
 }
-.mini-card-title {
-  font-family: var(--display);
-  font-size: 22px;
+.card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card-avatar.shape-circle img,
+.card-avatar.shape-circle { border-radius: 50%; }
+.card-avatar.shape-rounded img,
+.card-avatar.shape-rounded { border-radius: 18%; }
+.card-avatar.shape-square img,
+.card-avatar.shape-square { border-radius: 4px; }
+
+/* Card body */
+.card-body {
+  padding: 18px 20px 14px;
+}
+.card-title {
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: -.02em;
-  margin-bottom: 8px;
+  line-height: 1.35;
+  word-break: break-word;
+  color: var(--text);
+}
+.card-desc {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text2);
+  white-space: pre-wrap;
   word-break: break-word;
 }
-.mini-card-desc {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--muted);
-  white-space: pre-wrap;
-  margin-bottom: 16px;
-}
-.mini-card-btns {
+
+/* Card buttons (用戶設定的，全寬長條) */
+.card-buttons {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 0 16px 16px;
 }
-.mini-card-btn {
+.card-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: var(--fg);
-  color: #fff;
-  text-decoration: none;
-  font-size: 13px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: var(--r-btn);
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 4px;
-  transition: background .15s;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter .15s, transform .1s;
+  font-family: inherit;
+  letter-spacing: -.005em;
 }
-.mini-card-btn:hover { background: #333; }
-.mini-card-btn.style-link {
-  background: transparent;
-  color: var(--fg);
-  border: 1px solid var(--line);
+.card-btn:hover { filter: brightness(1.08); }
+.card-btn:active { transform: scale(.98); }
+.card-btn .arrow {
+  font-weight: 600;
+  opacity: .85;
 }
-.mini-card-btn.style-link:hover { background: var(--accent); }
-
-/* FOOTER */
-.footer {
-  padding: 48px 24px 32px;
-  border-top: 1px solid var(--line);
-  margin-top: 64px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 16px;
+.card-btn.style-primary {
+  /* color comes from inline style (b.color) */
 }
-.footer-mark {
-  font-family: var(--display);
-  font-size: clamp(28px, 6vw, 48px);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -.03em;
+.card-btn.style-secondary {
+  /* color comes from inline style */
 }
-.footer-mark .accent-mark {
-  color: var(--accent-deep);
-  margin-right: 8px;
-}
-.footer-meta {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: right;
+.card-btn.style-link {
+  background: transparent !important;
+  border: 1px solid var(--line-strong);
+  /* color comes from inline style */
 }
 
-/* ═══ ACTION BAR (fixed bottom) ═══ */
-.action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg);
-  border-top: 1px solid var(--line);
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+/* Utility row (CONTACT / COPY / SHARE / LINE) */
+.card-utility {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  z-index: 10;
+  padding: 8px 16px 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
 }
-.action-btn {
+.card-utility.has-line { grid-template-columns: repeat(4, 1fr); }
+.util-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 12px 6px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  color: var(--fg);
-  font-family: var(--display);
+  padding: 10px 6px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  letter-spacing: .02em;
   cursor: pointer;
   transition: all .15s;
-  line-height: 1.2;
+  text-transform: uppercase;
+  line-height: 1;
 }
-.action-btn:hover { background: var(--accent); }
-.action-btn:active { transform: scale(.96); }
-.action-btn.primary {
-  background: var(--fg);
-  color: var(--bg);
+.util-btn:hover {
+  background: var(--text);
+  color: var(--card-bg);
+  border-color: var(--text);
 }
-.action-btn.primary:hover {
-  background: var(--accent);
-  color: var(--fg);
+.util-btn:active { transform: scale(.96); }
+.util-btn.line-btn {
+  background: var(--text);
+  color: var(--card-bg);
+  border-color: var(--text);
 }
-.action-btn.hidden { display: none; }
+.util-btn.line-btn:hover { background: #333; }
+.util-btn.hidden { display: none; }
 
-/* ═══ TOAST ═══ */
+/* Toast */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(96px + env(safe-area-inset-bottom, 0));
+  bottom: 20px;
   transform: translateX(-50%) translateY(20px);
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--text);
+  color: var(--card-bg);
   padding: 10px 18px;
-  border-radius: 4px;
+  border-radius: 100px;
   font-size: 12px;
-  font-family: var(--mono);
-  letter-spacing: .04em;
-  text-transform: uppercase;
   font-weight: 600;
+  letter-spacing: .04em;
   z-index: 1000;
   opacity: 0;
   transition: all .25s;
   pointer-events: none;
   white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
 }
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
 
-/* ═══ QR MODAL ═══ */
+/* Footer */
+.powered {
+  text-align: center;
+  padding: 16px 20px 32px;
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: .04em;
+}
+.powered a { color: inherit; text-decoration: none; }
+.powered a:hover { color: var(--text); }
+
+/* QR modal */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.6);
+  background: rgba(0,0,0,.55);
   z-index: 100;
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
@@ -527,161 +320,86 @@ body {
   pointer-events: none;
   transition: opacity .2s;
 }
-.modal-overlay.show {
-  opacity: 1;
-  pointer-events: auto;
-}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
 .modal {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 32px 28px;
-  max-width: 360px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 28px 24px;
+  max-width: 320px;
   width: 100%;
   text-align: center;
   transform: scale(.95);
   transition: transform .2s;
 }
 .modal-overlay.show .modal { transform: scale(1); }
-.modal h3 {
-  font-family: var(--display);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -.02em;
-  margin-bottom: 6px;
-}
-.modal p {
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: .04em;
-  margin-bottom: 20px;
-  font-family: var(--mono);
-  text-transform: uppercase;
-}
+.modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.modal p { color: var(--text2); font-size: 12px; margin-bottom: 16px; }
 .modal img.qr {
-  width: 220px;
-  height: 220px;
-  background: var(--bg);
+  width: 200px; height: 200px;
+  background: #fff;
   padding: 8px;
-  margin: 0 auto 16px;
+  margin: 0 auto 14px;
   display: block;
   border: 1px solid var(--line);
+  border-radius: 8px;
 }
 .modal-close {
-  background: var(--fg);
+  background: var(--text);
   border: none;
-  color: var(--bg);
-  padding: 12px 32px;
-  border-radius: 4px;
-  font-family: var(--display);
+  color: var(--card-bg);
+  padding: 10px 24px;
+  border-radius: 100px;
+  font-family: inherit;
   font-weight: 600;
-  font-size: 12px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-size: 13px;
   cursor: pointer;
 }
-.modal-close:hover { background: var(--accent); color: var(--fg); }
-
-/* utility */
-.no-hero .hero-img-wrap { display: none; }
+.modal-close:hover { background: #333; }
 </style>
 </head>
 <body>
 
 <header class="nav">
   <div class="nav-mark">THE TAG</div>
-  <div class="nav-meta">DIGITAL CARD / 2026</div>
+  <div class="nav-meta">DIGITAL CARD</div>
 </header>
 
 <div id="loading">
   <div class="spinner"></div>
-  <div class="loading-text">Loading</div>
+  <div class="loading-text">載入中</div>
 </div>
 
 <div id="error" hidden>
-  <div class="error-mark">404</div>
-  <div class="error-title">名片不存在</div>
-  <div class="error-msg" id="error-msg">連結可能已失效或格式錯誤。請確認 URL 是否正確。</div>
+  <div class="error-mark">🔍</div>
+  <div class="error-title" id="error-title">找不到名片</div>
+  <div class="error-msg" id="error-msg">連結可能已失效。</div>
 </div>
 
 <main id="content" hidden>
-
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-meta">
-      <span class="hero-tag" id="hero-tag-text">Digital Business Card</span>
-      <span class="hero-date" id="hero-date">2026 / Q2</span>
-    </div>
-    <h1 class="hero-title" id="hero-title">Loading</h1>
-    <div class="hero-sub" id="hero-sub"></div>
-  </section>
-
-  <!-- Marquee -->
-  <div class="marquee">
-    <div class="marquee-track" id="marquee-track">
-      <span><span class="dot"></span>THE TAG · 橫流視覺工作室<span class="dot"></span>PHOTOGRAPHY<span class="dot"></span>BRAND<span class="dot"></span>COMMERCIAL<span class="dot"></span>THE TAG · 橫流視覺工作室<span class="dot"></span>PHOTOGRAPHY<span class="dot"></span>BRAND<span class="dot"></span>COMMERCIAL</span>
-    </div>
+  <div class="cards-wrap" id="cards"></div>
+  <div class="powered">
+    <a href="https://thetag.tw" target="_blank" rel="noopener">THE TAG · 橫流視覺工作室</a>
   </div>
-
-  <!-- Hero image -->
-  <section class="hero-img-wrap" id="hero-img-wrap"></section>
-
-  <!-- Connect (Card 1's buttons) -->
-  <section class="section" id="connect-section" hidden>
-    <div class="section-tag">Connect</div>
-    <h2 class="section-title">聯絡 / Contact</h2>
-    <div class="connect-grid" id="connect-grid"></div>
-  </section>
-
-  <!-- More cards (Card 2+) -->
-  <section class="section" id="more-section" hidden>
-    <div class="section-tag">Selected Work</div>
-    <h2 class="section-title">作品 / Selected Work</h2>
-    <div class="more-cards" id="more-cards"></div>
-  </section>
-
-  <footer class="footer">
-    <div class="footer-mark"><span class="accent-mark">✱</span>THE TAG</div>
-    <div class="footer-meta">橫流視覺工作室<br>POWERED BY · DIGITAL CARD STUDIO</div>
-  </footer>
-
-  <!-- Hidden cards container (for fallback / SEO) -->
-  <div id="cards" hidden></div>
 </main>
-
-<!-- Action bar -->
-<div class="action-bar" id="action-bar" hidden>
-  <button class="action-btn" data-act="vcard">+ Contact</button>
-  <button class="action-btn" data-act="copy">+ Copy</button>
-  <button class="action-btn" data-act="share">+ Share</button>
-  <button class="action-btn primary hidden" data-act="line" id="btn-line">+ LINE</button>
-</div>
 
 <div class="toast" id="toast"></div>
 
-<!-- QR modal -->
 <div class="modal-overlay" id="qr-modal">
   <div class="modal">
-    <h3>Scan to Open</h3>
-    <p>用手機 QR Code</p>
+    <h3>掃 QR Code</h3>
+    <p>用手機開啟</p>
     <img class="qr" id="qr-img" src="" alt="QR Code">
-    <button class="modal-close" onclick="closeQR()">Close</button>
+    <button class="modal-close" onclick="closeQR()">關閉</button>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════════════════════════════════
 const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
 const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
-const LIFF_ID = '2009436722-02IEHSWP'; // SHARE_LIFF_ID
+const LIFF_ID = '2009436722-02IEHSWP';
 
-// ═══════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
@@ -689,8 +407,6 @@ function getCardId() {
   const q = new URLSearchParams(location.search);
   let id = q.get('id') || q.get('pid');
   if (id) return id;
-
-  // LIFF 把外部 query 包進 liff.state（URL-encoded query string）
   const liffState = q.get('liff.state');
   if (liffState) {
     let inner = liffState;
@@ -701,14 +417,11 @@ function getCardId() {
       if (id) return id;
     } catch (e) {}
   }
-
-  // hash fallback (#id=xxx)
   if (location.hash) {
     const h = new URLSearchParams(location.hash.substring(1));
     id = h.get('id') || h.get('pid');
     if (id) return id;
   }
-
   return null;
 }
 
@@ -724,14 +437,10 @@ function toast(msg) {
 function showError(msg) {
   $('#loading').hidden = true;
   $('#content').hidden = true;
-  $('#action-bar').hidden = true;
   if (msg) $('#error-msg').textContent = msg;
   $('#error').hidden = false;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DATA FETCH
-// ═══════════════════════════════════════════════════════════════
 async function fetchCard(id) {
   const sb = supabase.createClient(SB_URL, SB_KEY);
   const { data: row, error } = await sb.from('card').select('*').eq('id', id).single();
@@ -741,127 +450,9 @@ async function fetchCard(id) {
   try {
     state = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
   } catch (e) {
-    throw new Error('名片資料格式錯誤：' + e.message);
+    throw new Error('資料格式錯誤：' + e.message);
   }
   return { row, state };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  RENDER（FINN SOLVEIG portfolio 風）
-// ═══════════════════════════════════════════════════════════════
-function renderCards(state) {
-  const cards = (state.cards || []).filter(c => c && (c.title || c.desc || c.bgImgUrl || c.buttons?.length));
-  if (!cards.length) {
-    showError('這張名片還沒有內容');
-    return;
-  }
-
-  // pendingMsg 的 hero URL 優先（已合成上 ImgBB）
-  const pendingCards = state.pendingMsg?.contents?.contents || [];
-  const getHero = (idx, card) => {
-    const fromPending = pendingCards[idx]?.hero?.url;
-    if (fromPending) return fromPending;
-    return card.bgImgUrl || card.bgImgData || '';
-  };
-
-  // ─── HERO（用第一張卡片）───
-  const card1 = cards[0];
-  const hero1 = getHero(0, card1);
-
-  // 拆 title — 如果有 ｜或 / 等分隔符號可加 ✱ 點綴
-  $('#hero-title').textContent = card1.title || '數位名片';
-  $('#hero-sub').textContent = card1.desc || state.altText || '';
-
-  // hero tag (左上小標)
-  if (card1.title) {
-    const firstWord = card1.title.split(/[\s|｜·\/]/)[0];
-    $('#hero-tag-text').textContent = firstWord ? `${firstWord} · Digital Card` : 'Digital Business Card';
-  }
-
-  // hero image
-  const heroWrap = $('#hero-img-wrap');
-  if (hero1) {
-    heroWrap.innerHTML = `<img src="${esc(hero1)}" alt="${esc(card1.title || '')}" loading="eager">`;
-    if (card1.link) {
-      heroWrap.dataset.link = card1.link;
-      heroWrap.style.cursor = 'pointer';
-      heroWrap.addEventListener('click', () => window.open(card1.link, '_blank', 'noopener'));
-    }
-  } else {
-    heroWrap.innerHTML = `<div class="placeholder">No Image</div>`;
-  }
-
-  // ─── CONNECT（第一張卡片的 buttons）───
-  const buttons1 = card1.buttons || [];
-  if (buttons1.length || card1.link) {
-    const grid = $('#connect-grid');
-    const items = [...buttons1];
-    // Optional: 加 card.link 當第一個 entry
-    const links = items.map(b => {
-      const label = b.label || '按鈕';
-      const link = b.link || '#';
-      const isExt = !link.startsWith('tel:') && !link.startsWith('mailto:');
-      return `<a class="link-card"
-                 href="${esc(link)}"
-                 target="${isExt ? '_blank' : '_self'}"
-                 rel="noopener">
-        <span>${esc(label)}</span>
-        <span class="arrow">→</span>
-      </a>`;
-    }).join('');
-    grid.innerHTML = links;
-    $('#connect-section').hidden = false;
-  }
-
-  // ─── MORE CARDS（第二張之後）───
-  const moreCards = cards.slice(1);
-  if (moreCards.length) {
-    const wrap = $('#more-cards');
-    wrap.innerHTML = moreCards.map((c, i) => {
-      const hero = getHero(i + 1, c);
-      const heroEl = hero
-        ? `<a class="mini-card-hero" href="${esc(c.link || '#')}" target="_blank" rel="noopener" style="aspect-ratio:${parseRatio(state.ratio)}"><img src="${esc(hero)}" alt="${esc(c.title || '')}" loading="lazy"></a>`
-        : '';
-
-      const btns = (c.buttons || []).map(b => {
-        const style = b.style || 'primary';
-        return `<a class="mini-card-btn style-${esc(style)}" href="${esc(b.link || '#')}" target="_blank" rel="noopener">
-          <span>${esc(b.label || '按鈕')}</span>
-          <span>→</span>
-        </a>`;
-      }).join('');
-
-      return `<article class="mini-card">
-        ${heroEl}
-        <div class="mini-card-body">
-          <h3 class="mini-card-title">${esc(c.title || '（無標題）')}</h3>
-          ${c.desc ? `<p class="mini-card-desc">${esc(c.desc)}</p>` : ''}
-          ${btns ? `<div class="mini-card-btns">${btns}</div>` : ''}
-        </div>
-      </article>`;
-    }).join('');
-    $('#more-section').hidden = false;
-  }
-
-  // ─── OG tag patch ───
-  const firstTitle = card1.title || state.projectName || '數位名片';
-  const firstDesc = card1.desc || state.altText || 'THE TAG 數位版名片';
-  const firstImg = hero1;
-  document.title = firstTitle + ' · 數位名片';
-  document.querySelector('meta[property="og:title"]').content = firstTitle;
-  document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
-  if (firstImg && firstImg.startsWith('http')) {
-    document.querySelector('meta[property="og:image"]').content = firstImg;
-  }
-
-  // 動態 hero-date（用發布年月）
-  if (state.savedAt) {
-    try {
-      const d = new Date(state.savedAt);
-      const q = Math.ceil((d.getMonth() + 1) / 3);
-      $('#hero-date').textContent = `${d.getFullYear()} / Q${q}`;
-    } catch (e) {}
-  }
 }
 
 function parseRatio(r) {
@@ -870,9 +461,164 @@ function parseRatio(r) {
   return `${m[1]} / ${m[2]}`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ACTIONS
-// ═══════════════════════════════════════════════════════════════
+// 大頭照位置（match card-editor 的 avatarPos / avatarSize / avatarShape）
+function getAvatarStyle(c) {
+  const sizeMap = { sm: 60, md: 80, lg: 100 };
+  const baseSize = sizeMap[c.avatarSize || 'md'];
+  const scale = c.avatarScale || 1;
+  let w, h;
+  if (c.avatarShape === 'portrait') { w = baseSize * 0.75 * scale; h = baseSize * scale; }
+  else if (c.avatarShape === 'landscape') { w = baseSize * scale; h = baseSize * 0.75 * scale; }
+  else { w = baseSize * scale; h = baseSize * scale; }
+
+  // 位置（疊在 hero 左下、中下、右下）
+  const margin = 12;
+  let pos = '';
+  if (c.avatarPos === 'right') {
+    pos = `right: ${margin}px;`;
+  } else if (c.avatarPos === 'center') {
+    pos = `left: 50%; transform: translateX(-50%);`;
+  } else {
+    pos = `left: ${margin}px;`;
+  }
+  // 預設疊在 hero 底部，部分超出 hero 邊界
+  pos += `bottom: -${h * 0.25}px;`;
+
+  let shape = c.avatarShape || 'circle';
+  if (shape !== 'circle' && shape !== 'rounded' && shape !== 'square') shape = 'square';
+
+  const flipX = c.avatarFlipX ? 'transform: scaleX(-1);' : '';
+
+  return {
+    wrapStyle: `${pos} width: ${w}px; height: ${h}px;`,
+    imgStyle: flipX,
+    shapeClass: 'shape-' + shape
+  };
+}
+
+function renderCards(state) {
+  const cards = (state.cards || []).filter(c => c && (c.title || c.desc || c.bgImgUrl || c.avatarUrl || c.buttons?.length));
+  if (!cards.length) {
+    showError('這張名片還沒有內容');
+    return;
+  }
+
+  const pendingCards = state.pendingMsg?.contents?.contents || [];
+  const getHero = (idx, card) => {
+    const fromPending = pendingCards[idx]?.hero?.url;
+    if (fromPending) return fromPending;
+    return card.bgImgUrl || card.bgImgData || '';
+  };
+  const getAvatar = (card) => card.avatarUrl || card.avatarData || '';
+
+  const ratio = parseRatio(state.ratio);
+
+  // 偵測 LINE 環境：在 LINE 內顯示 LINE button
+  const showLineBtn = (typeof liff !== 'undefined' && liff.isInClient?.()) ? true : false;
+
+  const wrap = $('#cards');
+  wrap.innerHTML = cards.map((c, i) => {
+    const hero = getHero(i, c);
+    const avatarSrc = getAvatar(c);
+    const av = avatarSrc ? getAvatarStyle(c) : null;
+
+    // hero 區（含 avatar overlay）
+    const heroHtml = `<div class="card-hero" style="aspect-ratio:${ratio};${c.link ? 'cursor:pointer' : ''}" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
+        ${hero ? `<img class="bg" src="${esc(hero)}" alt="${esc(c.title || '')}" loading="lazy" style="${c.bgFlipX ? 'transform:scaleX(-1);' : ''}">` : ''}
+        ${avatarSrc ? `<div class="card-avatar ${av.shapeClass}" style="${av.wrapStyle}"><img src="${esc(avatarSrc)}" alt="" style="${av.imgStyle}"></div>` : ''}
+      </div>`;
+
+    // body
+    const titleHtml = c.title
+      ? `<div class="card-title">${esc(c.title)}</div>`
+      : '';
+    const descHtml = c.desc
+      ? `<div class="card-desc">${esc(c.desc)}</div>`
+      : '';
+    const bodyHtml = (titleHtml || descHtml)
+      ? `<div class="card-body" style="${avatarSrc ? `padding-top:${(av && av.wrapStyle.includes('100px')) ? 56 : 44}px` : ''}">${titleHtml}${descHtml}</div>`
+      : '';
+
+    // 用戶設定的 buttons（全寬長條，保留用戶顏色）
+    const userBtnsHtml = (c.buttons || []).map(b => {
+      const label = b.label || '按鈕';
+      const link = b.link || '#';
+      const style = b.style || 'primary';
+      const isExt = !link.startsWith('tel:') && !link.startsWith('mailto:');
+
+      let bg, color;
+      if (style === 'primary') {
+        bg = b.color || '#111111';
+        color = '#ffffff';
+      } else if (style === 'secondary') {
+        bg = b.color || '#f0f0f0';
+        color = '#111111';
+      } else {
+        bg = 'transparent';
+        color = b.color || '#111111';
+      }
+
+      return `<a class="card-btn style-${esc(style)}"
+                 href="${esc(link)}"
+                 target="${isExt ? '_blank' : '_self'}"
+                 rel="noopener"
+                 style="background:${esc(bg)};color:${esc(color)}">
+        <span>${esc(label)}</span>
+        <span class="arrow">→</span>
+      </a>`;
+    }).join('');
+
+    const btnsWrap = c.buttons?.length
+      ? `<div class="card-buttons" style="background:${esc(c.footerBg || '#fff')}">${userBtnsHtml}</div>`
+      : '';
+
+    // 卡片內 utility row（CONTACT / COPY / SHARE / 在 LINE 內顯示 LINE）
+    const utilHtml = `<div class="card-utility ${showLineBtn ? 'has-line' : ''}">
+      <button class="util-btn" data-act="vcard" data-card-idx="${i}">+ Contact</button>
+      <button class="util-btn" data-act="copy" data-card-idx="${i}">+ Copy</button>
+      <button class="util-btn" data-act="share" data-card-idx="${i}">+ Share</button>
+      ${showLineBtn ? `<button class="util-btn line-btn" data-act="line" data-card-idx="${i}">+ LINE</button>` : ''}
+    </div>`;
+
+    return `<article class="card">
+      ${heroHtml}
+      ${bodyHtml}
+      ${btnsWrap}
+      ${utilHtml}
+    </article>`;
+  }).join('');
+
+  // hero click → open link
+  wrap.querySelectorAll('.card-hero[data-link]').forEach(el => {
+    el.addEventListener('click', () => {
+      window.open(el.dataset.link, '_blank', 'noopener');
+    });
+  });
+
+  // utility button bind
+  wrap.querySelectorAll('.util-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = btn.dataset.act;
+      if (act === 'vcard') downloadVCard(state);
+      else if (act === 'copy') copyLink();
+      else if (act === 'share') shareLink(state);
+      else if (act === 'line') sendToLine(state);
+    });
+  });
+
+  // OG tags
+  const c0 = cards[0];
+  const firstTitle = c0?.title || state.projectName || '數位名片';
+  const firstDesc = c0?.desc || state.altText || 'THE TAG 數位名片';
+  const firstImg = getHero(0, c0);
+  document.title = firstTitle + ' · 數位名片';
+  document.querySelector('meta[property="og:title"]').content = firstTitle;
+  document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
+  if (firstImg && firstImg.startsWith('http')) {
+    document.querySelector('meta[property="og:image"]').content = firstImg;
+  }
+}
+
 function buildVCard(state) {
   const cards = state.cards || [];
   const c = cards[0] || {};
@@ -880,9 +626,7 @@ function buildVCard(state) {
   const desc = c.desc || '';
 
   const buttons = cards.flatMap(cc => cc.buttons || []);
-  const tels = [];
-  const emails = [];
-  const urls = [];
+  const tels = [], emails = [], urls = [];
   for (const b of buttons) {
     const link = b.link || '';
     if (link.startsWith('tel:')) tels.push(link.slice(4));
@@ -914,20 +658,20 @@ function downloadVCard(state) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  toast('Saved · 通訊錄已下載');
+  toast('通訊錄已下載');
 }
 
 async function copyLink() {
   try {
     await navigator.clipboard.writeText(location.href);
-    toast('Copied · 連結已複製');
+    toast('連結已複製');
   } catch (e) {
     const ta = document.createElement('textarea');
     ta.value = location.href;
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand('copy'); toast('Copied · 連結已複製'); }
-    catch { toast('Failed · 請手動選取'); }
+    try { document.execCommand('copy'); toast('連結已複製'); }
+    catch { toast('複製失敗'); }
     ta.remove();
   }
 }
@@ -935,12 +679,11 @@ async function copyLink() {
 async function shareLink(state) {
   const title = state.cards?.[0]?.title || '數位名片';
   const text = state.altText || '請查看數位名片';
-
   if (navigator.share) {
     try {
       await navigator.share({ title, text, url: location.href });
     } catch (e) {
-      if (e.name !== 'AbortError') toast('Failed · ' + e.message);
+      if (e.name !== 'AbortError') toast('分享失敗：' + e.message);
     }
   } else {
     showQR(location.href);
@@ -951,64 +694,50 @@ function showQR(url) {
   $('#qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=' + encodeURIComponent(url);
   $('#qr-modal').classList.add('show');
 }
-window.closeQR = function() {
-  $('#qr-modal').classList.remove('show');
-};
+window.closeQR = function() { $('#qr-modal').classList.remove('show'); };
 
 async function sendToLine(state) {
-  if (typeof liff === 'undefined') {
-    toast('LINE SDK · failed');
-    return;
-  }
+  if (typeof liff === 'undefined') { toast('LINE SDK 未載入'); return; }
   try {
     if (!liff.isApiAvailable('shareTargetPicker')) {
       window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
       return;
     }
     const msg = state.pendingMsg;
-    if (!msg) {
-      toast('No data · 重新發布');
-      return;
-    }
-    toast('Opening · 開啟分享');
+    if (!msg) { toast('沒有 Flex 資料，請重新發布'); return; }
+    toast('開啟分享…');
     const res = await liff.shareTargetPicker([msg]);
-    if (res?.status === 'success') {
-      toast('Shared · 分享成功');
-    }
+    if (res?.status === 'success') toast('分享成功');
   } catch (e) {
     console.error(e);
-    toast('Failed · ' + e.message);
+    toast('分享失敗：' + e.message);
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  LIFF PROGRESSIVE ENHANCEMENT
-// ═══════════════════════════════════════════════════════════════
 async function initLiffOptional() {
-  if (typeof liff === 'undefined') return false;
+  if (typeof liff === 'undefined') return;
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: false });
-    const isInClient = liff.isInClient();
-    const canShare = liff.isApiAvailable?.('shareTargetPicker');
-    if (isInClient && canShare) {
-      $('#btn-line').classList.remove('hidden');
-      return true;
+    if (liff.isInClient() && liff.isApiAvailable?.('shareTargetPicker')) {
+      // 重新 render 一次以加入 LINE button
+      window._showLineBtn = true;
+      // 簡單方式：直接顯示所有 hidden line-btn
+      // (renderCards 已根據 isInClient 判斷)
     }
   } catch (e) {
     console.warn('LIFF init skipped:', e.message);
   }
-  return false;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  MAIN
-// ═══════════════════════════════════════════════════════════════
 (async function main() {
   const id = getCardId();
   if (!id) {
-    showError('URL 缺少名片 ID。正確格式：share.html?id=xxxx');
+    showError('URL 缺少名片 ID（share.html?id=xxxx）');
     return;
   }
+
+  // LIFF init 先（決定 isInClient 才 render）
+  await initLiffOptional();
 
   let state;
   try {
@@ -1025,23 +754,8 @@ async function initLiffOptional() {
   }
 
   renderCards(state);
-
   $('#loading').hidden = true;
   $('#content').hidden = false;
-  $('#action-bar').hidden = false;
-
-  // Bind action buttons
-  document.querySelectorAll('.action-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const act = btn.dataset.act;
-      if (act === 'vcard') downloadVCard(state);
-      else if (act === 'copy') copyLink();
-      else if (act === 'share') shareLink(state);
-      else if (act === 'line') sendToLine(state);
-    });
-  });
-
-  initLiffOptional();
 })();
 </script>
 
