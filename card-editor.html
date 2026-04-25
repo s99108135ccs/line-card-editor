@@ -47,14 +47,14 @@
   --mono:'SF Mono','Menlo','Monaco','Consolas',monospace;
   --font:'SF Pro Display','-apple-system','BlinkMacSystemFont','Noto Sans TC',sans-serif;
 }
-body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;background:#ffffff;color:var(--bg);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ─ TOPBAR ─ */
 .topbar{background:var(--bg-elev-1);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border),0 4px 24px rgba(0,0,0,.4);border-bottom:1px solid var(--border)}
 .topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;letter-spacing:.04em}
 .topbar-brand-icon{font-size:20px;color:var(--green)}
 .topbar-btns{display:flex;gap:8px}
-.tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;letter-spacing:.02em}
+.tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);font-family:inherit;transition:all .15s;letter-spacing:.02em}
 .tbtn-white{background:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
 .tbtn-white:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 0 20px rgba(255,255,255,.5)}
 .tbtn-outline{background:transparent;color:var(--text2);border:1px solid var(--border-strong)}
@@ -104,12 +104,15 @@ textarea.finput{font-family:inherit}
 .size-btn.on,.ratio-btn.on{background:#fff;border-color:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
 .ratio-btn .rb-shape{border-color:currentColor}
 
-/* publish bar (inline style override) */
-#publish-bar{background:rgba(22,22,22,.92)!important;border-top:1px solid var(--border)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;box-shadow:0 -8px 32px rgba(0,0,0,.5)!important}
-#publish-bar button{transition:all .15s}
+/* publish bar (inline style override) — 改藍色（之前看起來像黑色） */
+#publish-bar{background:rgba(31,63,204,.96)!important;border-top:1px solid rgba(255,255,255,.25)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;box-shadow:0 -8px 32px rgba(31,63,204,.35)!important}
+#publish-bar button{transition:all .15s;border:1px solid rgba(255,255,255,.25)!important}
+#publish-bar button:hover{border-color:rgba(255,255,255,.5)!important}
 
 /* 預覽區（右側）— 名片預覽底色 */
-.preview-area,.preview-wrap{background:var(--bg)!important;color:var(--text)!important}
+.preview-area,.preview-wrap{background:#ffffff!important;color:var(--bg)!important}
+.preview-title{color:var(--bg)!important}
+.live-badge{background:rgba(0,209,102,.18)!important;color:#008f00!important;border:1px solid rgba(0,209,102,.4)!important}
 
 /* json output / pre */
 pre,#json-out{background:var(--bg-elev-2);color:var(--text2);border:1px solid var(--border);border-radius:10px}
