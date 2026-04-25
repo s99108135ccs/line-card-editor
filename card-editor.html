@@ -144,15 +144,15 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .alt-text-bar{font-size:10px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.15);border-radius:6px;padding:3px 8px;margin-top:6px;text-align:center}
 
 /* Flex card */
-.fcard{flex-shrink:0;width:300px;border-radius:14px;overflow:visible;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.15);cursor:grab;border:2.5px solid transparent;transition:all .15s;position:relative}
-.fcard:active{cursor:grabbing}
-.fcard.dragging{opacity:.4;transform:scale(.95)}
-.fcard.drag-over{box-shadow:0 0 0 3px var(--green),0 3px 12px rgba(0,0,0,.15)}
-.fcard-delete{position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(255,255,255,.95);border:1.5px solid #fcc;border-radius:50%;color:#e53935;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;opacity:0;transition:all .15s;font-family:inherit;padding:0;line-height:1;backdrop-filter:blur(4px)}
-.fcard:hover .fcard-delete,.fcard.sel .fcard-delete{opacity:1}
-.fcard-delete:hover{background:#e53935;color:#fff;transform:scale(1.1);box-shadow:0 4px 12px rgba(229,57,53,.4)}
-.fcard-drag-handle{position:absolute;top:6px;left:6px;width:28px;height:28px;background:rgba(0,0,0,.4);border:none;border-radius:50%;color:#fff;font-size:13px;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:10;opacity:0;transition:opacity .15s;backdrop-filter:blur(4px);user-select:none}
-.fcard:hover .fcard-drag-handle,.fcard.sel .fcard-drag-handle{opacity:1}
+.fcard{flex-shrink:0;width:300px;border-radius:14px;overflow:visible;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.15);cursor:pointer;border:2.5px solid transparent;transition:all .15s;position:relative}
+
+/* Sidebar card-pill 刪除 + 拖拉 */
+.card-pill{position:relative}
+.card-pill.dragging{opacity:.4}
+.card-pill.drag-over{box-shadow:0 0 0 2px var(--green)}
+.card-pill-delete{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#e53935;border:2px solid #fff;border-radius:50%;color:#fff;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;opacity:0;transition:all .15s;font-family:inherit;padding:0;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.card-pill:hover .card-pill-delete,.card-pill.active .card-pill-delete{opacity:1}
+.card-pill-delete:hover{transform:scale(1.2);background:#c62828}
 .fcard.sel{border-color:var(--green)}
 .fcard:hover{transform:translateY(-2px)}
 .fcard-hero{width:100%;position:relative;overflow:visible;background:#e0e0e0}
@@ -1010,8 +1010,43 @@ function renderTabs(){
   G.cards.forEach((c,i)=>{
     const b=document.createElement('button');
     b.className='card-pill'+(i===G.cur?' active':'');
-    b.textContent=`卡片 ${i+1}${c.title?' · '+c.title.slice(0,6):''}`;
-    b.onclick=()=>{G.cur=i;renderFields();renderTabs();render()};
+    b.draggable=true;
+    // 文字 + 刪除 ✕
+    const label=document.createElement('span');
+    label.textContent=`卡片 ${i+1}${c.title?' · '+c.title.slice(0,6):''}`;
+    b.appendChild(label);
+    if(G.cards.length>1){
+      const del=document.createElement('span');
+      del.className='card-pill-delete';
+      del.textContent='✕';
+      del.title='刪除這張卡片';
+      del.onclick=(e)=>{e.stopPropagation();delCardAt(i);};
+      b.appendChild(del);
+    }
+    // 點 pill 切換卡片
+    b.onclick=()=>{G.cur=i;renderFields();renderTabs();render();};
+    // 拖拉重排
+    b.addEventListener('dragstart',e=>{
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',String(i));
+      b.classList.add('dragging');
+    });
+    b.addEventListener('dragend',()=>{
+      b.classList.remove('dragging');
+      document.querySelectorAll('.card-pill.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    });
+    b.addEventListener('dragover',e=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      b.classList.add('drag-over');
+    });
+    b.addEventListener('dragleave',()=>b.classList.remove('drag-over'));
+    b.addEventListener('drop',e=>{
+      e.preventDefault();
+      b.classList.remove('drag-over');
+      const fromIdx=parseInt(e.dataTransfer.getData('text/plain'),10);
+      if(!isNaN(fromIdx)) reorderCard(fromIdx,i);
+    });
     wrap.appendChild(b);
   });
   const add=document.createElement('button');
@@ -1714,8 +1749,6 @@ function render(){
       :`<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
 
     div.innerHTML=`
-      <button class="fcard-drag-handle" type="button" title="拖拉重排順序">⋮⋮</button>
-      <button class="fcard-delete" type="button" title="刪除這張卡片">✕</button>
       <div class="fcard-hero" style="padding-top:${hp};background:${c.bgColor}22;position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
         ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor}">${esc(c.title)}</div>`
@@ -1723,41 +1756,6 @@ function render(){
         ${c.desc?`<div class="fcard-desc" style="font-size:${ds};color:${c.descColor}">${esc(c.desc).replace(/\n/g,'<br>')}</div>`:''}
       </div>${btnsHtml}`;
     wrap.appendChild(div);
-
-    // ── 刪除按鈕 ──
-    const delBtnEl = div.querySelector('.fcard-delete');
-    if(delBtnEl){
-      delBtnEl.addEventListener('click', e => {
-        e.stopPropagation();
-        delCardAt(i);
-      });
-    }
-
-    // ── 拖拉重排（HTML5 Drag & Drop）──
-    div.draggable = true;
-    div.addEventListener('dragstart', e => {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(i));
-      div.classList.add('dragging');
-    });
-    div.addEventListener('dragend', () => {
-      div.classList.remove('dragging');
-      document.querySelectorAll('.fcard.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
-    div.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      div.classList.add('drag-over');
-    });
-    div.addEventListener('dragleave', () => {
-      div.classList.remove('drag-over');
-    });
-    div.addEventListener('drop', e => {
-      e.preventDefault();
-      div.classList.remove('drag-over');
-      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
-      if(!isNaN(fromIdx)) reorderCard(fromIdx, i);
-    });
   });
 
 
