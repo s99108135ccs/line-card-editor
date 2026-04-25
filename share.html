@@ -665,51 +665,28 @@ window.closeQR = function() {
 // LIFF send to LINE friend (progressive enhancement)
 async function sendToLine(state) {
   if (typeof liff === 'undefined') {
-    alert('🔍 DEBUG: LIFF SDK 未載入');
+    toast('❌ LINE SDK 未載入');
     return;
   }
   try {
     if (!liff.isApiAvailable('shareTargetPicker')) {
-      alert('🔍 DEBUG: isApiAvailable=false，改用 fallback');
+      // Fallback: open in LINE (let LINE app handle)
       window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
       return;
     }
     const msg = state.pendingMsg;
     if (!msg) {
-      alert('🔍 DEBUG: state.pendingMsg 是空的！\n\n這代表你發布這張名片時還是舊版 card-editor，沒存 pendingMsg。\n請回去重新發布一次。');
+      toast('❌ 名片沒有 Flex 訊息資料，請回 card-editor 重新發布');
       return;
     }
-    // DEBUG：分享前先檢查 token scope
-    let tokenScope = 'unknown';
-    try {
-      const t = liff.getAccessToken();
-      const r = await fetch('https://api.line.me/oauth2/v2.1/verify?access_token=' + t);
-      const d = await r.json();
-      tokenScope = d.scope || JSON.stringify(d);
-    } catch (e) { tokenScope = 'fetch error: ' + e.message; }
-
     toast('📤 開啟分享…');
     const res = await liff.shareTargetPicker([msg]);
-    alert(
-      '🔍 DEBUG 結果\n\n' +
-      '【LINE 回應】\n' + JSON.stringify(res, null, 2) + '\n\n' +
-      '【Token Scope】\n' + tokenScope + '\n\n' +
-      '【isInClient】 ' + liff.isInClient() + '\n' +
-      '【isApiAvailable】 ' + liff.isApiAvailable('shareTargetPicker') + '\n\n' +
-      '【pendingMsg 結構】\n' +
-      'type: ' + msg.type + '\n' +
-      'altText: ' + msg.altText + '\n' +
-      'contents.type: ' + msg.contents?.type + '\n' +
-      'contents.contents.length: ' + msg.contents?.contents?.length
-    );
     if (res?.status === 'success') {
       toast('✅ 分享成功');
-    } else {
-      toast('⚠️ 狀態：' + (res?.status || 'no response'));
     }
   } catch (e) {
     console.error(e);
-    alert('🔍 DEBUG 錯誤\n\n' + e.message + '\n\nstack:\n' + (e.stack || ''));
+    toast('❌ 分享失敗：' + e.message);
   }
 }
 

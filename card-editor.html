@@ -1716,7 +1716,10 @@ function render(){
 //  JSON BUILD
 // ══════════════════════════════════════════
 function buildJson(heroDataUrls){
-  const BH={sm:'40px',md:'52px',lg:'60px'};
+  // LINE Flex button.height 規格：只接受 'sm' 或 'md'（字串），不能是 px 數值
+  // 之前用 '40px' / '52px' / '60px' 會被 LINE 後端 validation 拒收 → 整則訊息被 silent drop
+  // 這就是為什麼 shareTargetPicker 回 success 但對方收不到的原因
+  const BH={sm:'sm',md:'md',lg:'md'};
   return {
     type:'flex',
     altText:G.altText,
