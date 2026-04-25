@@ -518,7 +518,9 @@ function renderCards(state) {
     return '';
   };
 
-  const ratio = parseRatio(state.ratio);
+  const defaultRatio = parseRatio(state.ratio);
+  // 每張卡片獨立比例：c.ratio 優先，沒設用全卡共用 state.ratio
+  const cardRatioStr = (c) => parseRatio(c.ratio || state.ratio);
 
   // 偵測 LINE 環境：在 LINE 內顯示 LINE button
   const showLineBtn = (typeof liff !== 'undefined' && liff.isInClient?.()) ? true : false;
@@ -559,7 +561,7 @@ function renderCards(state) {
       </div>
     ` : '';
 
-    const heroHtml = `<div class="card-hero${heroFlipClass}" style="aspect-ratio:${ratio};${heroBgStyle}${c.link ? 'cursor:pointer;' : ''};position:relative" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
+    const heroHtml = `<div class="card-hero${heroFlipClass}" style="aspect-ratio:${cardRatioStr(c)};${heroBgStyle}${c.link ? 'cursor:pointer;' : ''};position:relative" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
         ${avatarSrc ? `<div class="card-avatar ${av.shapeClass}" style="${av.wrapStyle}"><img src="${esc(avatarSrc)}" alt="" style="${av.imgStyle}"></div>` : ''}
         ${heroTitleHtml}
       </div>`;

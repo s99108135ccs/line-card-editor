@@ -836,6 +836,21 @@ function confirmCrop() {
   if(CROP.isAvatar){
     const shapeMap = {rect:'square', circle:'circle', rounded:'rounded', portrait:'portrait', landscape:'landscape'};
     G.cards[G.cur].avatarShape = shapeMap[CROP.shape] || 'square';
+  } else {
+    // B2: 背景圖裁切時，自動把該卡比例同步到 crop shape（修「選橫式變直式」bug）
+    // 規則：橫式 → 4:3；直式 → 3:4；正方 → 1:1；圓/圓角不動 ratio
+    const cur = G.cards[G.cur];
+    if(cur){
+      if(CROP.shape === 'landscape'){
+        // 如果該卡已經是橫式族（20:13/4:3/2:1）就不改，否則設 4:3
+        if(!['20:13','4:3','2:1'].includes(cardRatio(cur))) cur.ratio = '4:3';
+      } else if(CROP.shape === 'portrait'){
+        cur.ratio = '3:4';
+      } else if(CROP.shape === 'rect'){
+        cur.ratio = '1:1';
+      }
+      // circle / rounded 不動 ratio（avatar 才會用，bg 不會）
+    }
   }
   if (CROP.onDone) CROP.onDone(dataUrl);
 }
@@ -988,6 +1003,7 @@ function newCard(){
   return {
     title:'', titleColor:'#111111',
     desc:'', descColor:'#555555',
+    ratio: '',  // 每張卡獨立比例（''/null = 用全卡共用 G.ratio）
     link:'', bgColor:'#ffffff',
     bgImgData:'', bgImgUrl:'',
     bgFlipX: false,         // 背景水平翻轉
@@ -1278,6 +1294,23 @@ function renderFields(){
 
   document.getElementById('card-fields').innerHTML=`
   <div class="fields">
+
+    <div class="field">
+      <div class="flabel">📐 這張卡的比例 <span style="font-weight:400;font-size:10px;color:var(--text3)">（每張可獨立，不影響其他卡）</span></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+        ${[
+          {v:'20:13',label:'橫長',sub:'20:13'},
+          {v:'4:3',label:'橫式',sub:'4:3'},
+          {v:'1:1',label:'正方',sub:'1:1'},
+          {v:'3:4',label:'直式',sub:'3:4'},
+          {v:'2:1',label:'寬條',sub:'2:1'}
+        ].map(r => {
+          const isOn = (c.ratio || G.ratio) === r.v;
+          return `<button class="av-opt${isOn?' on':''}" onclick="setCardRatio('${r.v}')" style="flex:1;min-width:50px;padding:6px 4px;font-size:11px"><div style="font-weight:700">${r.label}</div><div style="font-size:9px;color:#999;margin-top:1px">${r.sub}</div></button>`;
+        }).join('')}
+      </div>
+      <div class="fhint" style="margin-bottom:12px">改裁切形狀時這個會自動同步。</div>
+    </div>
 
     <div class="field">
       <div class="flabel">🖼️ 名片圖片</div>
@@ -1592,6 +1625,11 @@ function setAvPos(v,el){
   refreshLayerPreview();render();
 }
 
+// 每張卡的實際比例（c.ratio 優先，沒設用全域 G.ratio）
+function cardRatio(c){
+  return (c && c.ratio) ? c.ratio : G.ratio;
+}
+
 // ── Hero 字體 ──
 const HERO_FONT_MAP = {
   sans:    "'Noto Sans TC', -apple-system, 'PingFang TC', sans-serif",
@@ -1613,6 +1651,10 @@ const HERO_FONT_CHOICES = [
 ];
 
 // ── 背景模式 + Hero 標題 handlers ──
+function setCardRatio(r){
+  G.cards[G.cur].ratio = r;
+  renderFields(); render();
+}
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
   renderFields(); render();
@@ -1717,7 +1759,7 @@ function refreshLayerPreview(){
 function composeHero(c){
   return new Promise(resolve=>{
     const RATIO_MAP={'20:13':[840,546],'1:1':[600,600],'4:3':[800,600],'3:4':[600,800],'2:1':[800,400]};
-    const [W,H]=RATIO_MAP[G.ratio]||[840,546];
+    const [W,H]=RATIO_MAP[cardRatio(c)]||[840,546];
     const canvas=document.createElement('canvas');
     canvas.width=W; canvas.height=H;
     const ctx=canvas.getContext('2d');
@@ -2007,7 +2049,7 @@ function render(){
       G.cur=i;renderFields();renderTabs();render();
     };
 
-    const hp=RATIO_PCT[G.ratio]||'65%';
+    const hp=RATIO_PCT[cardRatio(c)]||'65%';
     const bgSrc=c.bgImgData||(c.bgImgUrl&&c.bgImgUrl!=='[本地圖片]'?c.bgImgUrl:'');
     const avSrc=c.avatarData||(c.avatarUrl&&c.avatarUrl!=='[本地圖片]'?c.avatarUrl:'');
 
@@ -2191,14 +2233,17 @@ function buildJson(heroDataUrls){
         const bubble={type:'bubble'};
         const heroSrc = heroDataUrls ? heroDataUrls[i] : '';
         if(heroSrc){
-          bubble.hero={type:'image',url:heroSrc,size:'full',aspectMode:'cover',aspectRatio:G.ratio,
+          bubble.hero={type:'image',url:heroSrc,size:'full',aspectMode:'cover',aspectRatio:cardRatio(c),
             ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{})};
         }
         bubble.body={type:'box',layout:'vertical',backgroundColor:c.bgColor,
+          paddingBottom:'sm',  // A1: 收緊 body 下 padding（減少 carousel 等高造成的空白感）
           ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{}),
           contents:[
             {type:'text',text:c.title||'（無標題）',weight:'bold',size:G.titleSize,color:c.titleColor,wrap:true},
-            ...(c.desc?[{type:'text',text:c.desc,size:G.descSize,color:c.descColor,wrap:true,margin:'sm'}]:[])
+            ...(c.desc?[{type:'text',text:c.desc,size:G.descSize,color:c.descColor,wrap:true,margin:'sm'}]:[]),
+            // A1: filler 把多餘空間吃掉，讓 desc 跟 buttons 之間視覺上更緊
+            {type:'filler'}
           ]};
         if(c.buttons.length){
           const btnObjs = c.buttons.map(b=>({
@@ -2224,6 +2269,7 @@ function buildJson(heroDataUrls){
             footerContents=btnObjs;
           }
           bubble.footer={type:'box',layout:'vertical',spacing:'sm',paddingAll:'8px',
+            paddingTop:'sm',  // A1: 收緊 footer 上 padding
             backgroundColor:c.footerBg||'#ffffff',
             contents:footerContents};
         }
@@ -3475,6 +3521,7 @@ function applyProjectState(state){
     if(c.heroTitleFont === undefined) c.heroTitleFont = 'sans';
     if(c.heroTitleX === undefined) c.heroTitleX = 0;
     if(c.heroTitleY === undefined) c.heroTitleY = 0;
+    if(c.ratio === undefined) c.ratio = ''; // 舊資料用 G.ratio
   });
   // 還原 API Keys
   if(state.apiKeys){
