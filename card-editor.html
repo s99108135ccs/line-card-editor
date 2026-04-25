@@ -322,6 +322,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </head>
 <body>
@@ -536,7 +537,8 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
   <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'">🚀 發布到 LINE</button>
   <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="複製 JSON 到剪貼簿">📋 複製</button>
   <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
-  <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="專案列表">📂 專案</button>
+  <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="Supabase 專案列表">📂 專案</button>
+  <button onclick="showDriveModal()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="Google Drive 備份/還原">☁️ Drive</button>
 </div>
 
 <!-- 發布步驟說明（收折） -->
@@ -2333,6 +2335,182 @@ function newProject(){
   localStorage.removeItem('line-card-project');
   document.getElementById('projects-overlay')?.remove();
   location.reload();
+}
+
+// ══════════════════════════════════════════
+//  Google Drive 備份/還原
+// ══════════════════════════════════════════
+const GOOGLE_CLIENT_ID = '509856385308-e75vgh97mie37gs725unque8bhoekflg.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILE_PREFIX = 'card-backup-';
+
+let _driveTokenClient = null;
+
+function getDriveToken(){
+  return new Promise((resolve, reject) => {
+    if(typeof google === 'undefined' || !google.accounts){
+      return reject(new Error('Google SDK 還在載入，請稍候 3 秒再試'));
+    }
+    let tokenClient;
+    try {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: DRIVE_SCOPE,
+        callback: (resp) => {
+          if(resp.error) return reject(new Error(resp.error_description || resp.error));
+          resolve(resp.access_token);
+        },
+        error_callback: (err) => reject(new Error(err?.type || 'OAuth 失敗'))
+      });
+    } catch(e){
+      return reject(e);
+    }
+    tokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+function showDriveModal(){
+  document.getElementById('drive-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'drive-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);font-family:inherit;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:18px;font-weight:800;color:#1a1a1a">☁️ Google Drive 備份</div>
+        <button onclick="document.getElementById('drive-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#ccc">✕</button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">
+        備份名片資料到你的 Google Drive。第一次需要授權登入 Google。
+      </div>
+
+      <button onclick="syncToDrive()"
+        style="width:100%;padding:14px;border-radius:10px;border:none;background:#4285f4;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:8px">
+        ⬆️ 立即備份到 Drive
+      </button>
+
+      <button onclick="listDriveBackups()"
+        style="width:100%;padding:14px;border-radius:10px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px">
+        📥 從 Drive 還原（看備份列表）
+      </button>
+
+      <div id="drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function syncToDrive(){
+  try {
+    toast('⏳ 開啟 Google 授權...');
+    const token = await getDriveToken();
+    toast('⏳ 上傳到 Drive...');
+    const state = getProjectState();
+    const data = JSON.stringify({ version: 2, backupAt: new Date().toISOString(), state }, null, 2);
+    const date = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    const projectName = state.projectName || '未命名';
+    const safeName = projectName.replace(/[^\w一-龥\-]/g,'_').slice(0,30);
+    const name = `${DRIVE_FILE_PREFIX}${safeName}-${date}.json`;
+    const metadata = { name, mimeType: 'application/json' };
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    fd.append('file', new Blob([data], { type: 'application/json' }));
+    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd
+    });
+    if(!r.ok) throw new Error('上傳失敗 HTTP ' + r.status);
+    const result = await r.json();
+    console.log('Drive backup created:', result);
+    toast('✅ 已備份到 Drive');
+    if(document.getElementById('drive-list')) listDriveBackups();
+  } catch(e) {
+    console.error(e);
+    toast('❌ 備份失敗：' + e.message);
+  }
+}
+
+async function listDriveBackups(){
+  try {
+    toast('⏳ 取得備份列表...');
+    const token = await getDriveToken();
+    const q = encodeURIComponent(`name contains '${DRIVE_FILE_PREFIX}' and mimeType='application/json' and trashed=false`);
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if(!r.ok) throw new Error('列表失敗 HTTP ' + r.status);
+    const data = await r.json();
+    const files = data.files || [];
+    const listEl = document.getElementById('drive-list');
+    if(!listEl) return;
+    if(!files.length){
+      listEl.innerHTML = '<div style="text-align:center;color:#aaa;padding:16px;font-size:13px">Drive 還沒有備份檔，按上面「立即備份」開始</div>';
+      toast('');
+      return;
+    }
+    listEl.innerHTML = files.map(f => {
+      const date = new Date(f.modifiedTime).toLocaleString('zh-TW');
+      const sizeKB = f.size ? Math.round(f.size/1024) + ' KB' : '';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:10px;background:#f9f9f9;border:1px solid #eee">
+        <div style="flex:1;min-width:0;cursor:pointer" onclick="restoreFromDrive('${f.id}','${esc(f.name).replace(/'/g,'&apos;')}')">
+          <div style="font-weight:600;font-size:12px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</div>
+          <div style="font-size:10px;color:#999;margin-top:2px">${date} · ${sizeKB}</div>
+        </div>
+        <button onclick="event.stopPropagation();deleteDriveBackup('${f.id}')" title="刪除這個備份" style="background:none;border:1px solid #fcc;border-radius:6px;cursor:pointer;font-size:12px;color:#c33;padding:4px 8px">🗑</button>
+      </div>`;
+    }).join('');
+    toast('');
+  } catch(e) {
+    console.error(e);
+    toast('❌ 列表失敗：' + e.message);
+  }
+}
+
+async function restoreFromDrive(fileId, fileName){
+  if(!confirm(`確定要還原「${fileName}」？\n\n目前未存的編輯會被覆蓋。`)) return;
+  try {
+    toast('⏳ 從 Drive 下載...');
+    const token = await getDriveToken();
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if(!r.ok) throw new Error('下載失敗 HTTP ' + r.status);
+    const text = await r.text();
+    const backup = JSON.parse(text);
+    if(!backup.state) throw new Error('備份格式錯誤（缺 state）');
+    document.getElementById('drive-overlay')?.remove();
+    if(typeof applyProjectState === 'function'){
+      applyProjectState(backup.state);
+      toast('✅ 已從 Drive 還原');
+    } else {
+      // fallback：寫進 localStorage 然後 reload
+      localStorage.setItem('line-card-project', JSON.stringify(backup.state));
+      toast('✅ 已還原，重整中...');
+      setTimeout(()=>location.reload(), 800);
+    }
+  } catch(e) {
+    console.error(e);
+    toast('❌ 還原失敗：' + e.message);
+  }
+}
+
+async function deleteDriveBackup(fileId){
+  if(!confirm('確定刪除這個備份？此動作無法還原。')) return;
+  try {
+    const token = await getDriveToken();
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if(!r.ok && r.status !== 204) throw new Error('刪除失敗 HTTP ' + r.status);
+    toast('✅ 已刪除');
+    listDriveBackups();
+  } catch(e) {
+    console.error(e);
+    toast('❌ 刪除失敗：' + e.message);
+  }
 }
 
 function toJson5(obj){
