@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#ffffff">
 <title>數位名片</title>
 
 <!-- OG tags (will be patched by JS after load) -->
@@ -12,33 +12,34 @@
 <meta property="og:type" content="profile">
 <meta property="og:image" content="">
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 
 :root {
-  --page-bg: #0d0d0d;
-  --page-fg: #f5f5f5;
-  --page-muted: #999;
-  --page-border: rgba(255,255,255,.08);
-  --accent: #e8791e;
-  --accent-hover: #ff8c35;
-  --danger: #e53935;
-  --success: #00b900;
-  --card-shadow: 0 20px 60px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.3);
-  --radius: 18px;
-  --mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  --bg: #ffffff;
+  --fg: #000000;
+  --muted: #888888;
+  --line: #000000;
+  --line-soft: rgba(0,0,0,.08);
+  --accent: #cfff04;       /* 螢光黃綠 chartreuse */
+  --accent-deep: #b9e600;
+  --display: 'Bricolage Grotesque', 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  --body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  --mono: 'SF Mono', 'Menlo', monospace;
 }
 
 html, body {
-  background: var(--page-bg);
-  color: var(--page-fg);
-  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
+  letter-spacing: -.005em;
 }
 
 body {
@@ -46,23 +47,42 @@ body {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+  padding-bottom: 80px;  /* leave space for action-bar */
 }
 
-/* ═══ Top brand ═══ */
-.brand {
-  padding: 18px 20px 8px;
-  text-align: center;
-  flex-shrink: 0;
+/* ═══ NAV ═══ */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
 }
-.brand-mark {
+.nav-mark {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-mark::before {
+  content: '✱';
+  color: var(--accent-deep);
+  font-size: 18px;
+  line-height: 1;
+}
+.nav-meta {
   font-size: 11px;
-  letter-spacing: .3em;
-  color: var(--page-muted);
   font-weight: 500;
+  letter-spacing: .12em;
   text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--mono);
 }
 
-/* ═══ Loading ═══ */
+/* ═══ LOADING ═══ */
 #loading {
   flex: 1;
   display: flex;
@@ -70,150 +90,370 @@ body {
   justify-content: center;
   flex-direction: column;
   gap: 16px;
-  padding: 40px;
+  padding: 80px 24px;
 }
 .spinner {
-  width: 36px; height: 36px;
-  border: 3px solid rgba(232,121,30,.2);
-  border-top-color: var(--accent);
+  width: 32px; height: 32px;
+  border: 2px solid var(--line-soft);
+  border-top-color: var(--fg);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { color: var(--page-muted); font-size: 13px; }
+.loading-text {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--mono);
+}
 
-/* ═══ Error ═══ */
+/* ═══ ERROR ═══ */
 #error {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 40px 20px;
+  padding: 80px 24px;
   text-align: center;
-  gap: 14px;
+  gap: 16px;
 }
-.error-icon { font-size: 48px; opacity: .4; }
-.error-title { font-size: 18px; font-weight: 700; }
-.error-msg { color: var(--page-muted); font-size: 13px; max-width: 320px; line-height: 1.6; }
+.error-mark {
+  font-family: var(--display);
+  font-size: 80px;
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.error-msg {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.6;
+}
 
-/* ═══ Cards area ═══ */
+/* ═══ MAIN CONTENT ═══ */
 #content { flex: 1; }
 
-.cards-wrap {
-  padding: 8px 16px 140px;
-  max-width: 520px;
-  margin: 0 auto;
+/* HERO */
+.hero {
+  padding: 32px 24px 24px;
+  position: relative;
 }
-@media (min-width: 640px) {
-  .cards-wrap {
-    padding: 24px 24px 180px;
+.hero-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.hero-tag {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: var(--mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-tag::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--accent-deep);
+  border-radius: 50%;
+}
+.hero-date {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+.hero-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(48px, 14vw, 96px);
+  line-height: .95;
+  letter-spacing: -.04em;
+  word-break: break-word;
+  margin: 0 0 16px;
+}
+.hero-title .accent-mark {
+  color: var(--accent-deep);
+  display: inline-block;
+  margin-left: 8px;
+}
+.hero-sub {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--fg);
+  white-space: pre-wrap;
+  max-width: 540px;
+  margin-bottom: 8px;
+}
+
+/* MARQUEE — 滾動標籤條 */
+.marquee {
+  background: var(--accent);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+  padding: 10px 0;
+  white-space: nowrap;
+  position: relative;
+}
+.marquee-track {
+  display: inline-flex;
+  gap: 32px;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--fg);
+  animation: marquee 24s linear infinite;
+  padding-left: 32px;
+}
+.marquee-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 32px;
+}
+.marquee-track .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--fg);
+  border-radius: 50%;
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* HERO IMAGE */
+.hero-img-wrap {
+  padding: 0 24px;
+  margin-top: 24px;
+}
+.hero-img-wrap img,
+.hero-img-wrap .placeholder {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  background: #f0f0f0;
+}
+.hero-img-wrap[data-link] { cursor: pointer; }
+.hero-img-wrap .placeholder {
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* ═══ SECTION (Connect / More) ═══ */
+.section {
+  padding: 48px 24px 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 48px;
+}
+.section-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-tag::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--accent-deep);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 7vw, 48px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+  margin-bottom: 32px;
+}
+
+/* CONNECT (link cards) */
+.connect-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 1px solid var(--line-soft);
+}
+@media (min-width: 600px) {
+  .connect-grid { grid-template-columns: 1fr 1fr; }
+}
+.link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 0;
+  text-decoration: none;
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  border-bottom: 1px solid var(--line-soft);
+  transition: padding-left .25s ease, color .15s;
+  cursor: pointer;
+}
+@media (min-width: 600px) {
+  .connect-grid > .link-card:nth-child(odd) {
+    border-right: 1px solid var(--line-soft);
+    padding-right: 24px;
+  }
+  .connect-grid > .link-card:nth-child(even) {
+    padding-left: 24px;
   }
 }
+.link-card:hover {
+  padding-left: 12px;
+  color: var(--accent-deep);
+}
+.link-card .arrow {
+  font-family: var(--display);
+  font-weight: 800;
+  transition: transform .2s;
+}
+.link-card:hover .arrow { transform: translateX(8px); }
 
-.card {
+/* MORE CARDS (2nd, 3rd...) */
+.more-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+@media (min-width: 700px) {
+  .more-cards { grid-template-columns: 1fr 1fr; }
+}
+.mini-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
   background: #fff;
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--card-shadow);
-  margin-bottom: 18px;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: cardIn .5s forwards ease-out;
+  display: flex;
+  flex-direction: column;
 }
-.card:nth-child(1){ animation-delay: .05s; }
-.card:nth-child(2){ animation-delay: .15s; }
-.card:nth-child(3){ animation-delay: .25s; }
-.card:nth-child(4){ animation-delay: .35s; }
-.card:nth-child(n+5){ animation-delay: .45s; }
-@keyframes cardIn {
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card-hero {
-  position: relative;
+.mini-card-hero {
   width: 100%;
-  background: #eee;
-  overflow: hidden;
+  background: #f0f0f0;
+  display: block;
+  position: relative;
 }
-.card-hero img {
+.mini-card-hero img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.card-hero[data-link] { cursor: pointer; }
-
-.card-body {
-  padding: 16px 18px;
+.mini-card-body {
+  padding: 20px;
 }
-.card-title {
+.mini-card-title {
+  font-family: var(--display);
+  font-size: 22px;
   font-weight: 700;
-  line-height: 1.4;
+  letter-spacing: -.02em;
+  margin-bottom: 8px;
   word-break: break-word;
 }
-.card-desc {
-  margin-top: 6px;
+.mini-card-desc {
+  font-size: 13px;
   line-height: 1.6;
+  color: var(--muted);
   white-space: pre-wrap;
-  word-break: break-word;
+  margin-bottom: 16px;
 }
-
-.card-footer {
-  padding: 8px;
+.mini-card-btns {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
-.card-footer.half {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.card-btn {
+.mini-card-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-family: inherit;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--fg);
+  color: #fff;
   text-decoration: none;
-  cursor: pointer;
-  transition: transform .15s, filter .15s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background .15s;
 }
-.card-btn:active { transform: scale(.97); }
-.card-btn:hover { filter: brightness(1.05); }
-.card-btn.style-primary { color: #fff; }
-.card-btn.style-secondary { color: #000; }
-.card-btn.style-link { background: transparent !important; text-decoration: underline; }
+.mini-card-btn:hover { background: #333; }
+.mini-card-btn.style-link {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
+}
+.mini-card-btn.style-link:hover { background: var(--accent); }
 
-/* ═══ Size mapping (LINE Flex → CSS) ═══ */
-.size-xs { font-size: 11px; }
-.size-sm { font-size: 13px; }
-.size-md { font-size: 15px; }
-.size-lg { font-size: 18px; }
-.size-xl { font-size: 22px; }
-.size-xxl { font-size: 28px; }
+/* FOOTER */
+.footer {
+  padding: 48px 24px 32px;
+  border-top: 1px solid var(--line);
+  margin-top: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-mark {
+  font-family: var(--display);
+  font-size: clamp(28px, 6vw, 48px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+.footer-mark .accent-mark {
+  color: var(--accent-deep);
+  margin-right: 8px;
+}
+.footer-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
 
-.btn-sm { height: 40px; font-size: 13px; }
-.btn-md { height: 52px; font-size: 15px; }
-.btn-lg { height: 60px; font-size: 16px; }
-
-/* ═══ Action bar (fixed bottom) ═══ */
+/* ═══ ACTION BAR (fixed bottom) ═══ */
 .action-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(13,13,13,.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--page-border);
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0)) 14px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
@@ -221,86 +461,65 @@ body {
 }
 .action-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 9px 4px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  color: var(--page-fg);
-  font-family: inherit;
-  font-size: 10.5px;
+  gap: 4px;
+  padding: 12px 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all .15s;
-  line-height: 1;
+  line-height: 1.2;
 }
-.action-btn:active { transform: scale(.95); }
-.action-btn:hover {
-  background: rgba(232,121,30,.1);
-  border-color: rgba(232,121,30,.3);
-  color: var(--accent);
-}
-.action-btn .ic {
-  font-size: 20px;
-  line-height: 1;
-}
+.action-btn:hover { background: var(--accent); }
+.action-btn:active { transform: scale(.96); }
 .action-btn.primary {
-  background: var(--accent);
-  color: #fff;
+  background: var(--fg);
+  color: var(--bg);
 }
 .action-btn.primary:hover {
-  background: var(--accent-hover);
-  color: #fff;
+  background: var(--accent);
+  color: var(--fg);
 }
 .action-btn.hidden { display: none; }
 
-/* ═══ Toast ═══ */
+/* ═══ TOAST ═══ */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(100px + env(safe-area-inset-bottom, 0));
+  bottom: calc(96px + env(safe-area-inset-bottom, 0));
   transform: translateX(-50%) translateY(20px);
-  background: rgba(20,20,20,.95);
-  color: #fff;
+  background: var(--fg);
+  color: var(--bg);
   padding: 10px 18px;
-  border-radius: 100px;
-  font-size: 13px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
   font-weight: 600;
   z-index: 1000;
   opacity: 0;
   transition: all .25s;
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0,0,0,.4);
-  border: 1px solid var(--page-border);
 }
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
 
-/* ═══ Powered by ═══ */
-.powered {
-  text-align: center;
-  padding: 14px 20px 24px;
-  font-size: 10px;
-  color: rgba(255,255,255,.25);
-  letter-spacing: .1em;
-}
-.powered a {
-  color: inherit;
-  text-decoration: none;
-}
-.powered a:hover { color: var(--accent); }
-
-/* ═══ Modal ═══ */
+/* ═══ QR MODAL ═══ */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.75);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,.6);
   z-index: 100;
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
@@ -313,76 +532,129 @@ body {
   pointer-events: auto;
 }
 .modal {
-  background: #161616;
-  border: 1px solid var(--page-border);
-  border-radius: 20px;
-  padding: 28px 24px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 32px 28px;
   max-width: 360px;
   width: 100%;
   text-align: center;
-  transform: scale(.9);
+  transform: scale(.95);
   transition: transform .2s;
 }
 .modal-overlay.show .modal { transform: scale(1); }
-.modal h3 { font-size: 17px; margin-bottom: 6px; font-weight: 800; }
-.modal p { color: var(--page-muted); font-size: 13px; margin-bottom: 18px; line-height: 1.6; }
-.modal img.qr { width: 220px; height: 220px; border-radius: 10px; background: #fff; padding: 10px; margin: 0 auto 14px; display: block; }
-.modal-close {
-  background: rgba(255,255,255,.08);
-  border: none;
-  color: var(--page-fg);
-  padding: 10px 24px;
-  border-radius: 100px;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .15s;
+.modal h3 {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin-bottom: 6px;
 }
-.modal-close:hover { background: rgba(255,255,255,.15); }
+.modal p {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .04em;
+  margin-bottom: 20px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+.modal img.qr {
+  width: 220px;
+  height: 220px;
+  background: var(--bg);
+  padding: 8px;
+  margin: 0 auto 16px;
+  display: block;
+  border: 1px solid var(--line);
+}
+.modal-close {
+  background: var(--fg);
+  border: none;
+  color: var(--bg);
+  padding: 12px 32px;
+  border-radius: 4px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.modal-close:hover { background: var(--accent); color: var(--fg); }
+
+/* utility */
+.no-hero .hero-img-wrap { display: none; }
 </style>
 </head>
 <body>
 
-<div class="brand">
-  <div class="brand-mark">THE TAG · Digital Card</div>
-</div>
+<header class="nav">
+  <div class="nav-mark">THE TAG</div>
+  <div class="nav-meta">DIGITAL CARD / 2026</div>
+</header>
 
 <div id="loading">
   <div class="spinner"></div>
-  <div class="loading-text">載入名片中…</div>
+  <div class="loading-text">Loading</div>
 </div>
 
 <div id="error" hidden>
-  <div class="error-icon">🔍</div>
-  <div class="error-title">找不到這張名片</div>
+  <div class="error-mark">404</div>
+  <div class="error-title">名片不存在</div>
   <div class="error-msg" id="error-msg">連結可能已失效或格式錯誤。請確認 URL 是否正確。</div>
 </div>
 
 <main id="content" hidden>
-  <div class="cards-wrap" id="cards"></div>
-  <div class="powered">
-    <a href="https://thetag.tw" target="_blank" rel="noopener">橫流視覺影像 THE TAG</a>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-meta">
+      <span class="hero-tag" id="hero-tag-text">Digital Business Card</span>
+      <span class="hero-date" id="hero-date">2026 / Q2</span>
+    </div>
+    <h1 class="hero-title" id="hero-title">Loading</h1>
+    <div class="hero-sub" id="hero-sub"></div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee">
+    <div class="marquee-track" id="marquee-track">
+      <span><span class="dot"></span>THE TAG · 橫流視覺工作室<span class="dot"></span>PHOTOGRAPHY<span class="dot"></span>BRAND<span class="dot"></span>COMMERCIAL<span class="dot"></span>THE TAG · 橫流視覺工作室<span class="dot"></span>PHOTOGRAPHY<span class="dot"></span>BRAND<span class="dot"></span>COMMERCIAL</span>
+    </div>
   </div>
+
+  <!-- Hero image -->
+  <section class="hero-img-wrap" id="hero-img-wrap"></section>
+
+  <!-- Connect (Card 1's buttons) -->
+  <section class="section" id="connect-section" hidden>
+    <div class="section-tag">Connect</div>
+    <h2 class="section-title">聯絡 / Contact</h2>
+    <div class="connect-grid" id="connect-grid"></div>
+  </section>
+
+  <!-- More cards (Card 2+) -->
+  <section class="section" id="more-section" hidden>
+    <div class="section-tag">Selected Work</div>
+    <h2 class="section-title">作品 / Selected Work</h2>
+    <div class="more-cards" id="more-cards"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-mark"><span class="accent-mark">✱</span>THE TAG</div>
+    <div class="footer-meta">橫流視覺工作室<br>POWERED BY · DIGITAL CARD STUDIO</div>
+  </footer>
+
+  <!-- Hidden cards container (for fallback / SEO) -->
+  <div id="cards" hidden></div>
 </main>
 
+<!-- Action bar -->
 <div class="action-bar" id="action-bar" hidden>
-  <button class="action-btn" data-act="vcard">
-    <span class="ic">📇</span>
-    <span>存通訊錄</span>
-  </button>
-  <button class="action-btn" data-act="copy">
-    <span class="ic">🔗</span>
-    <span>複製連結</span>
-  </button>
-  <button class="action-btn" data-act="share">
-    <span class="ic">📤</span>
-    <span>分享</span>
-  </button>
-  <button class="action-btn primary hidden" data-act="line" id="btn-line">
-    <span class="ic">💬</span>
-    <span>傳到 LINE</span>
-  </button>
+  <button class="action-btn" data-act="vcard">+ Contact</button>
+  <button class="action-btn" data-act="copy">+ Copy</button>
+  <button class="action-btn" data-act="share">+ Share</button>
+  <button class="action-btn primary hidden" data-act="line" id="btn-line">+ LINE</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -390,10 +662,10 @@ body {
 <!-- QR modal -->
 <div class="modal-overlay" id="qr-modal">
   <div class="modal">
-    <h3>📱 掃描分享</h3>
-    <p>用手機對準 QR code 開啟名片</p>
+    <h3>Scan to Open</h3>
+    <p>用手機 QR Code</p>
     <img class="qr" id="qr-img" src="" alt="QR Code">
-    <button class="modal-close" onclick="closeQR()">關閉</button>
+    <button class="modal-close" onclick="closeQR()">Close</button>
   </div>
 </div>
 
@@ -405,7 +677,7 @@ body {
 // ═══════════════════════════════════════════════════════════════
 const SB_URL = 'https://mwxyjaukrnbtdnbtceih.supabase.co';
 const SB_KEY = 'sb_publishable_w-CHHu70DZXkLPGl1WltcQ_ZvMiYQa8';
-const LIFF_ID = '2009436722-02IEHSWP'; // SHARE_LIFF_ID, for progressive enhancement
+const LIFF_ID = '2009436722-02IEHSWP'; // SHARE_LIFF_ID
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -419,7 +691,6 @@ function getCardId() {
   if (id) return id;
 
   // LIFF 把外部 query 包進 liff.state（URL-encoded query string）
-  // 例：?liff.state=%3Fid%3Dxxx 或 ?liff.state=id%3Dxxx
   const liffState = q.get('liff.state');
   if (liffState) {
     let inner = liffState;
@@ -476,14 +747,8 @@ async function fetchCard(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  RENDER
+//  RENDER（FINN SOLVEIG portfolio 風）
 // ═══════════════════════════════════════════════════════════════
-function parseRatio(r) {
-  const m = String(r || '20:13').match(/^(\d+)\s*:\s*(\d+)$/);
-  if (!m) return '20 / 13';
-  return `${m[1]} / ${m[2]}`;
-}
-
 function renderCards(state) {
   const cards = (state.cards || []).filter(c => c && (c.title || c.desc || c.bgImgUrl || c.buttons?.length));
   if (!cards.length) {
@@ -491,7 +756,7 @@ function renderCards(state) {
     return;
   }
 
-  // Use pendingMsg hero URLs if available (已合成+ImgBB) — preferred
+  // pendingMsg 的 hero URL 優先（已合成上 ImgBB）
   const pendingCards = state.pendingMsg?.contents?.contents || [];
   const getHero = (idx, card) => {
     const fromPending = pendingCards[idx]?.hero?.url;
@@ -499,90 +764,121 @@ function renderCards(state) {
     return card.bgImgUrl || card.bgImgData || '';
   };
 
-  const ratio = parseRatio(state.ratio);
-  const titleSize = state.titleSize || 'md';
-  const descSize = state.descSize || 'sm';
-  const btnSize = state.btnSize || 'md';
-  const btnWidth = state.btnWidth || 'full';
+  // ─── HERO（用第一張卡片）───
+  const card1 = cards[0];
+  const hero1 = getHero(0, card1);
 
-  const wrap = $('#cards');
-  wrap.innerHTML = cards.map((c, i) => {
-    const hero = getHero(i, c);
-    const heroHtml = hero
-      ? `<div class="card-hero" style="aspect-ratio:${ratio};${c.link ? 'cursor:pointer' : ''}" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
-           <img src="${esc(hero)}" alt="${esc(c.title || '')}" loading="lazy">
-         </div>`
-      : '';
+  // 拆 title — 如果有 ｜或 / 等分隔符號可加 ✱ 點綴
+  $('#hero-title').textContent = card1.title || '數位名片';
+  $('#hero-sub').textContent = card1.desc || state.altText || '';
 
-    const titleHtml = c.title
-      ? `<div class="card-title size-${titleSize}" style="color:${esc(c.titleColor || '#111')}">${esc(c.title)}</div>`
-      : `<div class="card-title size-${titleSize}" style="color:${esc(c.titleColor || '#111')}; opacity:.4">（無標題）</div>`;
+  // hero tag (左上小標)
+  if (card1.title) {
+    const firstWord = card1.title.split(/[\s|｜·\/]/)[0];
+    $('#hero-tag-text').textContent = firstWord ? `${firstWord} · Digital Card` : 'Digital Business Card';
+  }
 
-    const descHtml = c.desc
-      ? `<div class="card-desc size-${descSize}" style="color:${esc(c.descColor || '#555')}">${esc(c.desc)}</div>`
-      : '';
+  // hero image
+  const heroWrap = $('#hero-img-wrap');
+  if (hero1) {
+    heroWrap.innerHTML = `<img src="${esc(hero1)}" alt="${esc(card1.title || '')}" loading="eager">`;
+    if (card1.link) {
+      heroWrap.dataset.link = card1.link;
+      heroWrap.style.cursor = 'pointer';
+      heroWrap.addEventListener('click', () => window.open(card1.link, '_blank', 'noopener'));
+    }
+  } else {
+    heroWrap.innerHTML = `<div class="placeholder">No Image</div>`;
+  }
 
-    const buttonsHtml = (c.buttons || []).map(b => {
+  // ─── CONNECT（第一張卡片的 buttons）───
+  const buttons1 = card1.buttons || [];
+  if (buttons1.length || card1.link) {
+    const grid = $('#connect-grid');
+    const items = [...buttons1];
+    // Optional: 加 card.link 當第一個 entry
+    const links = items.map(b => {
       const label = b.label || '按鈕';
       const link = b.link || '#';
-      const style = b.style || 'primary';
-      const bg = style === 'link' ? 'transparent' : (b.color || '#00b900');
-      const color = style === 'primary' ? '#fff' : (style === 'secondary' ? '#000' : (b.color || '#00b900'));
-      return `<a class="card-btn btn-${btnSize} style-${esc(style)}"
+      const isExt = !link.startsWith('tel:') && !link.startsWith('mailto:');
+      return `<a class="link-card"
                  href="${esc(link)}"
-                 target="${link.startsWith('tel:') || link.startsWith('mailto:') ? '_self' : '_blank'}"
-                 rel="noopener"
-                 style="background:${esc(bg)};color:${esc(color)}">${esc(label)}</a>`;
+                 target="${isExt ? '_blank' : '_self'}"
+                 rel="noopener">
+        <span>${esc(label)}</span>
+        <span class="arrow">→</span>
+      </a>`;
     }).join('');
+    grid.innerHTML = links;
+    $('#connect-section').hidden = false;
+  }
 
-    const footerClass = btnWidth === 'half' ? 'card-footer half' : 'card-footer';
-    const footerHtml = c.buttons?.length
-      ? `<div class="${footerClass}" style="background:${esc(c.footerBg || '#fff')}">${buttonsHtml}</div>`
-      : '';
+  // ─── MORE CARDS（第二張之後）───
+  const moreCards = cards.slice(1);
+  if (moreCards.length) {
+    const wrap = $('#more-cards');
+    wrap.innerHTML = moreCards.map((c, i) => {
+      const hero = getHero(i + 1, c);
+      const heroEl = hero
+        ? `<a class="mini-card-hero" href="${esc(c.link || '#')}" target="_blank" rel="noopener" style="aspect-ratio:${parseRatio(state.ratio)}"><img src="${esc(hero)}" alt="${esc(c.title || '')}" loading="lazy"></a>`
+        : '';
 
-    return `<article class="card">
-      ${heroHtml}
-      <div class="card-body" style="background:${esc(c.bgColor || '#fff')}">
-        ${titleHtml}
-        ${descHtml}
-      </div>
-      ${footerHtml}
-    </article>`;
-  }).join('');
+      const btns = (c.buttons || []).map(b => {
+        const style = b.style || 'primary';
+        return `<a class="mini-card-btn style-${esc(style)}" href="${esc(b.link || '#')}" target="_blank" rel="noopener">
+          <span>${esc(b.label || '按鈕')}</span>
+          <span>→</span>
+        </a>`;
+      }).join('');
 
-  // Hero click → open link
-  wrap.querySelectorAll('.card-hero[data-link]').forEach(el => {
-    el.addEventListener('click', () => {
-      window.open(el.dataset.link, '_blank', 'noopener');
-    });
-  });
+      return `<article class="mini-card">
+        ${heroEl}
+        <div class="mini-card-body">
+          <h3 class="mini-card-title">${esc(c.title || '（無標題）')}</h3>
+          ${c.desc ? `<p class="mini-card-desc">${esc(c.desc)}</p>` : ''}
+          ${btns ? `<div class="mini-card-btns">${btns}</div>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+    $('#more-section').hidden = false;
+  }
 
-  // OG tags patch
-  const firstTitle = cards[0]?.title || state.projectName || '數位名片';
-  const firstDesc = cards[0]?.desc || state.altText || 'THE TAG 數位版名片';
-  const firstImg = getHero(0, cards[0]);
+  // ─── OG tag patch ───
+  const firstTitle = card1.title || state.projectName || '數位名片';
+  const firstDesc = card1.desc || state.altText || 'THE TAG 數位版名片';
+  const firstImg = hero1;
   document.title = firstTitle + ' · 數位名片';
   document.querySelector('meta[property="og:title"]').content = firstTitle;
   document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
   if (firstImg && firstImg.startsWith('http')) {
     document.querySelector('meta[property="og:image"]').content = firstImg;
   }
-  document.querySelector('meta[property="og:url"]') ||
-    document.head.appendChild(Object.assign(document.createElement('meta'), {}));
+
+  // 動態 hero-date（用發布年月）
+  if (state.savedAt) {
+    try {
+      const d = new Date(state.savedAt);
+      const q = Math.ceil((d.getMonth() + 1) / 3);
+      $('#hero-date').textContent = `${d.getFullYear()} / Q${q}`;
+    } catch (e) {}
+  }
+}
+
+function parseRatio(r) {
+  const m = String(r || '20:13').match(/^(\d+)\s*:\s*(\d+)$/);
+  if (!m) return '20 / 13';
+  return `${m[1]} / ${m[2]}`;
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  ACTIONS
 // ═══════════════════════════════════════════════════════════════
-
-// Build vCard from state
 function buildVCard(state) {
   const cards = state.cards || [];
   const c = cards[0] || {};
   const name = c.title || state.projectName || '數位名片';
   const desc = c.desc || '';
 
-  // Parse buttons: tel:, mailto:, https: → structured vCard fields
   const buttons = cards.flatMap(cc => cc.buttons || []);
   const tels = [];
   const emails = [];
@@ -593,7 +889,6 @@ function buildVCard(state) {
     else if (link.startsWith('mailto:')) emails.push(link.slice(7));
     else if (/^https?:\/\//.test(link)) urls.push(link);
   }
-  // Also include card.link
   for (const cc of cards) {
     if (cc.link && /^https?:\/\//.test(cc.link) && !urls.includes(cc.link)) urls.push(cc.link);
   }
@@ -613,27 +908,26 @@ function downloadVCard(state) {
   const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const name = (state.cards?.[0]?.title || state.projectName || 'contact').replace(/[^\w\u4e00-\u9fa5\-]/g, '_');
+  const name = (state.cards?.[0]?.title || state.projectName || 'contact').replace(/[^\w一-龥\-]/g, '_');
   a.href = url;
   a.download = name + '.vcf';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  toast('📇 通訊錄已下載');
+  toast('Saved · 通訊錄已下載');
 }
 
 async function copyLink() {
   try {
     await navigator.clipboard.writeText(location.href);
-    toast('🔗 連結已複製');
+    toast('Copied · 連結已複製');
   } catch (e) {
-    // Fallback
     const ta = document.createElement('textarea');
     ta.value = location.href;
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand('copy'); toast('🔗 連結已複製'); }
-    catch { toast('❌ 複製失敗，請手動選取'); }
+    try { document.execCommand('copy'); toast('Copied · 連結已複製'); }
+    catch { toast('Failed · 請手動選取'); }
     ta.remove();
   }
 }
@@ -646,10 +940,9 @@ async function shareLink(state) {
     try {
       await navigator.share({ title, text, url: location.href });
     } catch (e) {
-      if (e.name !== 'AbortError') toast('❌ ' + e.message);
+      if (e.name !== 'AbortError') toast('Failed · ' + e.message);
     }
   } else {
-    // Fallback: show QR modal
     showQR(location.href);
   }
 }
@@ -662,31 +955,29 @@ window.closeQR = function() {
   $('#qr-modal').classList.remove('show');
 };
 
-// LIFF send to LINE friend (progressive enhancement)
 async function sendToLine(state) {
   if (typeof liff === 'undefined') {
-    toast('❌ LINE SDK 未載入');
+    toast('LINE SDK · failed');
     return;
   }
   try {
     if (!liff.isApiAvailable('shareTargetPicker')) {
-      // Fallback: open in LINE (let LINE app handle)
       window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
       return;
     }
     const msg = state.pendingMsg;
     if (!msg) {
-      toast('❌ 名片沒有 Flex 訊息資料，請回 card-editor 重新發布');
+      toast('No data · 重新發布');
       return;
     }
-    toast('📤 開啟分享…');
+    toast('Opening · 開啟分享');
     const res = await liff.shareTargetPicker([msg]);
     if (res?.status === 'success') {
-      toast('✅ 分享成功');
+      toast('Shared · 分享成功');
     }
   } catch (e) {
     console.error(e);
-    toast('❌ 分享失敗：' + e.message);
+    toast('Failed · ' + e.message);
   }
 }
 
@@ -699,9 +990,6 @@ async function initLiffOptional() {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: false });
     const isInClient = liff.isInClient();
     const canShare = liff.isApiAvailable?.('shareTargetPicker');
-    // 重要：只在「LINE App 內建瀏覽器 + API 可用」才顯示按鈕
-    // 桌面瀏覽器即使 isApiAvailable=true，shareTargetPicker 訊息也會被 LINE 後端 silent drop
-    // 所以這裡用 AND，不是 OR
     if (isInClient && canShare) {
       $('#btn-line').classList.remove('hidden');
       return true;
@@ -753,7 +1041,6 @@ async function initLiffOptional() {
     });
   });
 
-  // Try progressive enhance LIFF
   initLiffOptional();
 })();
 </script>
