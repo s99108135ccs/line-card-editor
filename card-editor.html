@@ -403,12 +403,12 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
   <div class="sidebar">
 
     <!-- 圖片比例（最優先設定） -->
-    <div style="padding:14px 16px;background:#fff8e1;border-bottom:2px solid #ffe082">
-      <div class="flabel" style="margin-bottom:6px;font-size:14px">🔑 第一步：設定 API Keys</div>
-      <div style="font-size:12px;color:#795700;line-height:1.7;margin-bottom:10px">
+    <div style="padding:14px 16px;background:var(--bg-elev-1);border-bottom:1px solid var(--border)">
+      <div class="flabel" style="margin-bottom:6px;font-size:14px;color:var(--text)">🔑 第一步：設定 API Keys</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
         這個工具需要兩個免費 API Key 才能完整運作：<br>
-        <b>① ImgBB</b> — 把你上傳的照片轉成網址，LINE 才能正確顯示圖片（base64 不被支援）<br>
-        <b>② remove.bg</b> — 大頭照自動去背功能，不填就無法使用去背
+        <b style="color:var(--text)">① ImgBB</b> — 把你上傳的照片轉成網址，LINE 才能正確顯示圖片（base64 不被支援）<br>
+        <b style="color:var(--text)">② remove.bg</b> — 大頭照自動去背功能，不填就無法使用去背
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -416,26 +416,26 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
           <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">📤 ImgBB Key <span style="font-weight:400;color:var(--text3)">（免費，無限張）</span></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input class="finput" id="imgbb-key" type="password" placeholder="貼上 ImgBB API Key" style="flex:1;font-size:12px">
-            <button class="tbtn tbtn-outline" style="background:#fff;color:#0077cc;border:1.5px solid #b3d9ff;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://api.imgbb.com/','_blank')">免費取得 ↗</button>
+            <button class="tbtn tbtn-outline" style="white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://api.imgbb.com/','_blank')">免費取得 ↗</button>
           </div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">✂️ remove.bg Key <span style="font-weight:400;color:var(--text3)">（免費 50 張/月）</span></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input class="finput" id="rmbg-api-key" type="password" placeholder="貼上 remove.bg API Key" style="flex:1;font-size:12px">
-            <button class="tbtn tbtn-outline" style="background:#fff;color:#9c27b0;border:1.5px solid #e1bee7;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://www.remove.bg/api','_blank')">免費取得 ↗</button>
+            <button class="tbtn tbtn-outline" style="white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://www.remove.bg/api','_blank')">免費取得 ↗</button>
           </div>
         </div>
 
-        <div style="font-size:10px;color:#a06000;margin-top:2px">
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">
           Key 只存在你的瀏覽器，不會上傳到任何伺服器。
-          <span style="cursor:pointer;text-decoration:underline" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
+          <span style="cursor:pointer;text-decoration:underline;color:var(--green)" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
         </div>
       </div>
     </div>
 
-    <div style="padding:12px 16px;background:#f0f8f0;border-bottom:1.5px solid #c8e6c9">
-      <div class="flabel" style="margin-bottom:8px">📐 名片圖片比例 <span style="font-weight:400;font-size:11px;color:var(--text3)">（全部卡片共用，建議先選）</span></div>
+    <div style="padding:12px 16px;background:var(--bg-elev-1);border-bottom:1px solid var(--border)">
+      <div class="flabel" style="margin-bottom:8px;color:var(--text)">📐 名片圖片比例 <span style="font-weight:400;font-size:11px;color:var(--text3)">（全部卡片共用，建議先選）</span></div>
       <div class="ratio-row" id="ratio-row">
         <button class="ratio-btn on" data-v="20:13" onclick="pickRatio(this)">
           <div class="rb-shape" style="width:36px;height:23px"></div>
@@ -465,29 +465,29 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
       </div>
     </div>
     <!-- 自訂顏色 -->
-    <div style="padding:12px 16px;border-bottom:1.5px solid var(--border);background:#fff">
-      <div class="flabel" style="margin-bottom:8px">🎨 自訂顏色（全域共用）</div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-elev-1)">
+      <div class="flabel" style="margin-bottom:8px;color:var(--text)">🎨 自訂顏色（全域共用）</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色1</span>
+          <span style="font-size:11px;color:var(--text2)">色1</span>
           <input type="color" id="custom-color-0" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
             oninput="setCustomColor(0,this.value)">
-          <span id="cv-custom-0" style="font-size:10px;color:#aaa">#ffffff</span>
+          <span id="cv-custom-0" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色2</span>
+          <span style="font-size:11px;color:var(--text2)">色2</span>
           <input type="color" id="custom-color-1" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
             oninput="setCustomColor(1,this.value)">
-          <span id="cv-custom-1" style="font-size:10px;color:#aaa">#ffffff</span>
+          <span id="cv-custom-1" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色3</span>
+          <span style="font-size:11px;color:var(--text2)">色3</span>
           <input type="color" id="custom-color-2" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
             oninput="setCustomColor(2,this.value)">
-          <span id="cv-custom-2" style="font-size:10px;color:#aaa">#ffffff</span>
+          <span id="cv-custom-2" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
         </div>
       </div>
       <div class="fhint">設定後會出現在所有顏色選項的第一排，全部卡片共用。</div>
