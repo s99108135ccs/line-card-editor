@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINE 名片製作</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+XiaoWei&family=Long+Cang&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -996,7 +996,10 @@ function newCard(){
     heroTitle: '',          // 疊在背景上的標題文字
     heroTitleColor:'#ffffff',
     heroTitleSize: 'md',    // sm/md/lg
-    heroTitlePos:  'center',// left/center/right
+    heroTitlePos:  'center',// left/center/right（用於 align text）
+    heroTitleFont: 'sans',  // sans / serif / kai / brush / mono / display
+    heroTitleX: 0,          // 拖曳偏移 X（以 preview 卡片寬度為基準的 px）
+    heroTitleY: 0,          // 拖曳偏移 Y
     avatarData:'', avatarUrl:'',
     avatarFlipX: false,      // 大頭照水平翻轉
     avatarSize: 'md',
@@ -1160,13 +1163,25 @@ function reorderCard(fromIdx, toIdx){
 function bindInput(el, cb){
   if(!el) return;
   let composing = false;
+  let debounceTimer = null;
+  // 內建 debounce 200ms：每打一個字不會立刻觸發 cb（cb 內含 render → composeHero 很重）
+  // 注音輸入：composing 期間不觸發；composition 結束 / 一般輸入 → 200ms 後執行
+  const fire = () => {
+    if(debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => cb(el.value), 200);
+  };
   el.addEventListener('compositionstart', () => composing = true);
   el.addEventListener('compositionend', () => {
     composing = false;
-    cb(el.value);
+    fire();
   });
   el.addEventListener('input', () => {
-    if (!composing) cb(el.value);
+    if (!composing) fire();
+  });
+  // 失焦時強制立刻 flush（user 點別處時希望 state 已更新）
+  el.addEventListener('blur', () => {
+    if(debounceTimer){ clearTimeout(debounceTimer); debounceTimer = null; }
+    cb(el.value);
   });
 }
 
@@ -1337,6 +1352,23 @@ function renderFields(){
       <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'}">
         <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">標題顏色</div>
         ${mkColorWidget('heroTitleColor'+ci, c.heroTitleColor, TEXT_COLORS, v=>updCard('heroTitleColor',v))}
+      </div>
+
+      <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'}">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">字體</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          ${HERO_FONT_CHOICES.map(f => `
+            <button class="av-opt${c.heroTitleFont===f.key?' on':''}" onclick="setHeroTitleFont('${f.key}')" style="font-family:${heroFontStack(f.key)};font-size:13px;padding:8px 4px;line-height:1.2">
+              <div style="font-weight:600">${f.sample}</div>
+              <div style="font-size:9px;color:#999;margin-top:2px;font-family:-apple-system,sans-serif;font-weight:400">${f.label}</div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'};display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f8f8f8;border-radius:6px;font-size:11px">
+        <div style="color:#666">📍 拖曳：在預覽區點住標題拖到任意位置</div>
+        ${(c.heroTitleX||c.heroTitleY)?`<button onclick="resetHeroTitlePos()" style="padding:3px 8px;font-size:10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 歸零</button>`:''}
       </div>
     </div>
 
@@ -1560,10 +1592,40 @@ function setAvPos(v,el){
   refreshLayerPreview();render();
 }
 
+// ── Hero 字體 ──
+const HERO_FONT_MAP = {
+  sans:    "'Noto Sans TC', -apple-system, 'PingFang TC', sans-serif",
+  serif:   "'Noto Serif TC', 'Songti TC', 'STSong', serif",
+  kai:     "'ZCOOL XiaoWei', 'BiauKai', 'Kaiti TC', 'STKaiti', cursive",
+  brush:   "'Ma Shan Zheng', 'STKaiti', cursive",
+  cursive: "'Long Cang', 'BiauKai', cursive",
+  mono:    "ui-monospace, 'SFMono-Regular', 'Menlo', 'Roboto Mono', monospace"
+};
+function heroFontStack(key){ return HERO_FONT_MAP[key] || HERO_FONT_MAP.sans; }
+
+const HERO_FONT_CHOICES = [
+  {key:'sans', label:'黑體（預設）', sample:'THE TAG'},
+  {key:'serif', label:'宋體', sample:'THE TAG'},
+  {key:'kai', label:'楷書', sample:'THE TAG'},
+  {key:'brush', label:'毛筆', sample:'THE TAG'},
+  {key:'cursive', label:'草書', sample:'THE TAG'},
+  {key:'mono', label:'等寬', sample:'THE TAG'}
+];
+
 // ── 背景模式 + Hero 標題 handlers ──
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
   renderFields(); render();
+}
+function setHeroTitleFont(v){
+  G.cards[G.cur].heroTitleFont = v;
+  renderFields(); render();
+}
+function resetHeroTitlePos(){
+  const c = G.cards[G.cur];
+  c.heroTitleX = 0;
+  c.heroTitleY = 0;
+  render();
 }
 function setHeroTitleSize(v,el){
   G.cards[G.cur].heroTitleSize=v;
@@ -1753,13 +1815,19 @@ function composeHero(c){
       if(!c.heroTitle) return;
       const sizeMap = {sm: W*0.055, md: W*0.085, lg: W*0.12};
       const fontSize = sizeMap[c.heroTitleSize||'md'];
-      ctx.font = `800 ${fontSize}px -apple-system,"PingFang TC","Helvetica Neue",Arial,sans-serif`;
+      // 套用 user 選擇的字體（不同字體 fallback chain）
+      ctx.font = `800 ${fontSize}px ${heroFontStack(c.heroTitleFont)}`;
       ctx.textBaseline = 'middle';
       let x;
       if(c.heroTitlePos === 'left'){ ctx.textAlign = 'left';   x = W*0.05; }
       else if(c.heroTitlePos === 'right'){ ctx.textAlign = 'right';  x = W*0.95; }
       else { ctx.textAlign = 'center'; x = W/2; }
-      const y = H/2;
+      let y = H/2;
+      // 套用拖曳偏移（preview 是 210px 寬，輸出是 W px，要等比放大）
+      const previewW = 210;
+      const scaleRatio = W / previewW;
+      x += (c.heroTitleX || 0) * scaleRatio;
+      y += (c.heroTitleY || 0) * scaleRatio;
       // 文字陰影（讓深色文字在亮背景或反之都看得清楚）
       ctx.shadowColor = 'rgba(0,0,0,0.35)';
       ctx.shadowBlur = 12;
@@ -1993,9 +2061,12 @@ function render(){
     const heroTitleAlign = c.heroTitlePos === 'left' ? 'flex-start'
       : c.heroTitlePos === 'right' ? 'flex-end' : 'center';
     const heroTitleTextAlign = c.heroTitlePos || 'center';
+    const htX = c.heroTitleX || 0;
+    const htY = c.heroTitleY || 0;
+    const isCurrent = i === G.cur;
     const heroTitleEl = c.heroTitle ? `
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlign};padding:0 16px;z-index:3;pointer-events:none">
-        <div style="font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word">${esc(c.heroTitle)}</div>
+      <div class="hero-title-wrap" data-card="${i}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlign};padding:0 16px;z-index:3;${isCurrent?'cursor:move':'pointer-events:none'};transform:translate(${htX}px,${htY}px)">
+        <div style="font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word;font-family:${heroFontStack(c.heroTitleFont)};pointer-events:none;user-select:none">${esc(c.heroTitle)}</div>
       </div>
     ` : '';
 
@@ -2021,10 +2092,62 @@ function render(){
     if(sel) sel.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   },50);
 
+  // 啟用 hero title 拖曳（只在當前選中卡上）
+  attachHeroTitleDrag();
+
   document.getElementById('json-out').textContent='（產生中...）';
   // composeHero 超慢（每張卡 canvas decode + encode base64 50-300ms）→ 必須 debounce
   // 連續輸入時不會狂跑，停手 800ms 才執行一次
   scheduleHeroJsonUpdate();
+}
+
+// Hero 標題拖曳：點住 + 拖到任意位置（只在當前選中卡）
+function attachHeroTitleDrag(){
+  document.querySelectorAll('.hero-title-wrap').forEach(wrap => {
+    const cardIdx = parseInt(wrap.dataset.card);
+    if(cardIdx !== G.cur) return; // 只當前卡片可拖
+    const c = G.cards[cardIdx];
+    if(!c || !c.heroTitle) return;
+
+    let startX = 0, startY = 0, origX = 0, origY = 0, dragging = false;
+
+    const onPointerDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      const p = (e.touches?.[0]) || e;
+      startX = p.clientX; startY = p.clientY;
+      origX = c.heroTitleX || 0;
+      origY = c.heroTitleY || 0;
+      document.addEventListener('mousemove', onPointerMove);
+      document.addEventListener('mouseup', onPointerUp);
+      document.addEventListener('touchmove', onPointerMove, {passive:false});
+      document.addEventListener('touchend', onPointerUp);
+    };
+    const onPointerMove = (e) => {
+      if(!dragging) return;
+      e.preventDefault();
+      const p = (e.touches?.[0]) || e;
+      const dx = p.clientX - startX;
+      const dy = p.clientY - startY;
+      c.heroTitleX = origX + dx;
+      c.heroTitleY = origY + dy;
+      // 直接改 transform（不重 render，避免卡）
+      wrap.style.transform = `translate(${c.heroTitleX}px,${c.heroTitleY}px)`;
+    };
+    const onPointerUp = () => {
+      dragging = false;
+      document.removeEventListener('mousemove', onPointerMove);
+      document.removeEventListener('mouseup', onPointerUp);
+      document.removeEventListener('touchmove', onPointerMove);
+      document.removeEventListener('touchend', onPointerUp);
+      // 拖曳完才觸發 render（更新 JSON，但 debounced 所以不卡）
+      render();
+    };
+
+    wrap.addEventListener('mousedown', onPointerDown);
+    wrap.addEventListener('touchstart', onPointerDown, {passive:false});
+  });
 }
 
 // debounced hero compose + JSON 更新（防止打字時瘋狂 canvas encode 卡死）
@@ -3340,6 +3463,9 @@ function applyProjectState(state){
     if(c.heroTitleColor === undefined) c.heroTitleColor = '#ffffff';
     if(c.heroTitleSize === undefined) c.heroTitleSize = 'md';
     if(c.heroTitlePos === undefined) c.heroTitlePos = 'center';
+    if(c.heroTitleFont === undefined) c.heroTitleFont = 'sans';
+    if(c.heroTitleX === undefined) c.heroTitleX = 0;
+    if(c.heroTitleY === undefined) c.heroTitleY = 0;
   });
   // 還原 API Keys
   if(state.apiKeys){
