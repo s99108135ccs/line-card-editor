@@ -8,31 +8,100 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f0f2f5;
-  --white:#fff;
-  --border:#e0e0e0;
-  --green:#00b900;
-  --green-dk:#008f00;
-  --green-lt:#e6f9e6;
-  --text:#1a1a1a;
-  --text2:#555;
-  --text3:#999;
-  --red:#e53935;
-  --yellow:#fff8e1;
+  /* THE TAG 攝影工作室風 — dark + 橘色 accent */
+  --bg:#0d0d0d;
+  --bg-elev-1:#161616;
+  --bg-elev-2:#1f1f1f;
+  --bg-elev-3:#262626;
+  --white:#161616;       /* 沿用變數名，語意變成「內層卡片背景」 */
+  --border:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.16);
+  --green:#e8791e;       /* 沿用變數名，整站從 LINE 綠改成 THE TAG 橘 */
+  --green-dk:#d96b14;
+  --green-lt:rgba(232,121,30,.14);
+  --text:#f5f5f5;
+  --text2:#b3b3b3;
+  --text3:#6b6b6b;
+  --red:#ef4444;
+  --yellow:rgba(234,179,8,.14);
   --r:12px;
+  --mono:'SF Mono','Menlo','Monaco','Consolas',monospace;
 }
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ─ TOPBAR ─ */
-.topbar{background:var(--green);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,185,0,.3)}
-.topbar-brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
-.topbar-brand-icon{font-size:22px}
+.topbar{background:var(--bg-elev-1);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border),0 4px 24px rgba(0,0,0,.4);border-bottom:1px solid var(--border)}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;letter-spacing:.04em}
+.topbar-brand-icon{font-size:20px;color:var(--green)}
 .topbar-btns{display:flex;gap:8px}
-.tbtn{padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
-.tbtn-white{background:#fff;color:var(--green)}
-.tbtn-white:hover{background:#e6ffe6}
-.tbtn-outline{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
-.tbtn-outline:hover{background:rgba(255,255,255,.25)}
+.tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;letter-spacing:.02em}
+.tbtn-white{background:var(--green);color:#fff}
+.tbtn-white:hover{background:var(--green-dk);transform:translateY(-1px)}
+.tbtn-outline{background:transparent;color:var(--text2);border:1px solid var(--border-strong)}
+.tbtn-outline:hover{background:var(--bg-elev-2);color:var(--text);border-color:var(--text3)}
+
+/* ════════════════════════════════════════════════════════
+   攝影工作室風 — Dark mode 全覆寫
+   ════════════════════════════════════════════════════════ */
+.sidebar{background:var(--bg-elev-1)}
+.card-selector{background:var(--bg-elev-2);border-color:var(--border)}
+.card-order-bar{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
+.card-pill{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
+.card-pill:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
+.card-pill.active{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 4px 12px rgba(232,121,30,.3)}
+.card-pill-add{border-color:rgba(255,255,255,.16);color:var(--text3)}
+.card-pill-add:hover{border-color:var(--green);color:var(--green);background:rgba(232,121,30,.06)}
+
+.icon-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
+.icon-btn:hover{background:var(--bg-elev-3);border-color:var(--text3);color:var(--text)}
+.icon-btn.danger{border-color:rgba(239,68,68,.3);color:var(--red);background:rgba(239,68,68,.05)}
+.icon-btn.danger:hover{background:rgba(239,68,68,.12);border-color:var(--red)}
+
+.flabel{color:var(--text);font-weight:700;letter-spacing:.01em}
+.fhint{color:var(--text3)}
+.finput{background:var(--bg-elev-2);color:var(--text);border-color:var(--border);transition:all .15s}
+.finput::placeholder{color:var(--text3)}
+.finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(232,121,30,.15);background:var(--bg-elev-3)}
+textarea.finput{font-family:inherit}
+
+/* upload area */
+.upload-area{background:var(--bg-elev-2);border-color:var(--border-strong);border-style:dashed}
+.upload-area:hover,.upload-area.drag{background:rgba(232,121,30,.06);border-color:var(--green)}
+.upload-text{color:var(--text)}
+.upload-hint{color:var(--text3)}
+.upload-clear{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:var(--red)}
+.upload-clear:hover{background:rgba(239,68,68,.15)}
+
+/* color picker */
+.color-native{background:var(--bg-elev-2);border-color:var(--border-strong)}
+.color-val{color:var(--text3);font-family:var(--mono)}
+.cpx{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.cpx.on{box-shadow:0 0 0 2px var(--bg-elev-1),0 0 0 4px var(--green)}
+
+/* size / ratio picker */
+.size-btn,.ratio-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
+.size-btn:hover,.ratio-btn:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
+.size-btn.on,.ratio-btn.on{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 4px 12px rgba(232,121,30,.3)}
+.ratio-btn .rb-shape{border-color:currentColor}
+
+/* publish bar (inline style override) */
+#publish-bar{background:rgba(22,22,22,.92)!important;border-top:1px solid var(--border)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;box-shadow:0 -8px 32px rgba(0,0,0,.5)!important}
+#publish-bar button{transition:all .15s}
+
+/* 預覽區（右側）— 名片預覽底色 */
+.preview-area,.preview-wrap{background:var(--bg)!important;color:var(--text)!important}
+
+/* json output / pre */
+pre,#json-out{background:var(--bg-elev-2);color:var(--text2);border:1px solid var(--border);border-radius:10px}
+
+/* toast */
+.toast{background:rgba(22,22,22,.95)!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
+
+/* 滾動條 dark */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 
 /* ─ LAYOUT ─ */
 .layout{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 52px)}
