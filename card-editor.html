@@ -54,8 +54,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .icon-btn.danger:hover{background:#fff0f0}
 
 /* Fields */
-.fields{padding:16px}
-.field{margin-bottom:20px}
+.fields{padding:0;background:#fff}
+.field{margin-bottom:0;padding:14px 16px;border-bottom:1px solid #ececec}
+.field:last-child{border-bottom:none}
+/* 交替灰白底，視覺區塊分割 */
+.field:nth-of-type(odd){background:#ffffff}
+.field:nth-of-type(even){background:#f7f7f7}
+.field:hover{background:#fafcff}
+.field:nth-of-type(even):hover{background:#f3f3f3}
 .field:last-child{margin-bottom:0}
 .flabel{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .fhint{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.5}
@@ -101,7 +107,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .ratio-btn .rb-sub{font-size:10px;opacity:.7}
 
 /* Section divider */
-.sec-divider{padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-top:1px solid var(--border);margin-top:4px}
+.sec-divider{padding:14px 16px 8px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;border-top:2px solid #d0d0d0;background:#ededed;margin-top:0}
 
 /* Buttons list */
 .btn-list{display:flex;flex-direction:column;gap:8px}
