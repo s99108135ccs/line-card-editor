@@ -144,7 +144,15 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .alt-text-bar{font-size:10px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.15);border-radius:6px;padding:3px 8px;margin-top:6px;text-align:center}
 
 /* Flex card */
-.fcard{flex-shrink:0;width:300px;border-radius:14px;overflow:visible;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.15);cursor:pointer;border:2.5px solid transparent;transition:all .15s}
+.fcard{flex-shrink:0;width:300px;border-radius:14px;overflow:visible;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.15);cursor:grab;border:2.5px solid transparent;transition:all .15s;position:relative}
+.fcard:active{cursor:grabbing}
+.fcard.dragging{opacity:.4;transform:scale(.95)}
+.fcard.drag-over{box-shadow:0 0 0 3px var(--green),0 3px 12px rgba(0,0,0,.15)}
+.fcard-delete{position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(255,255,255,.95);border:1.5px solid #fcc;border-radius:50%;color:#e53935;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;opacity:0;transition:all .15s;font-family:inherit;padding:0;line-height:1;backdrop-filter:blur(4px)}
+.fcard:hover .fcard-delete,.fcard.sel .fcard-delete{opacity:1}
+.fcard-delete:hover{background:#e53935;color:#fff;transform:scale(1.1);box-shadow:0 4px 12px rgba(229,57,53,.4)}
+.fcard-drag-handle{position:absolute;top:6px;left:6px;width:28px;height:28px;background:rgba(0,0,0,.4);border:none;border-radius:50%;color:#fff;font-size:13px;cursor:grab;display:flex;align-items:center;justify-content:center;z-index:10;opacity:0;transition:opacity .15s;backdrop-filter:blur(4px);user-select:none}
+.fcard:hover .fcard-drag-handle,.fcard.sel .fcard-drag-handle{opacity:1}
 .fcard.sel{border-color:var(--green)}
 .fcard:hover{transform:translateY(-2px)}
 .fcard-hero{width:100%;position:relative;overflow:visible;background:#e0e0e0}
@@ -1028,6 +1036,24 @@ function delCard(){
   if(G.cur>=G.cards.length)G.cur=G.cards.length-1;
   renderAll();
 }
+// 從預覽 ✕ 按鈕呼叫，可指定要刪的 index
+function delCardAt(idx){
+  if(G.cards.length<=1){toast('至少要保留一張卡片');return}
+  if(!confirm('確定刪除這張卡片？'))return;
+  G.cards.splice(idx,1);
+  if(G.cur>=G.cards.length) G.cur=G.cards.length-1;
+  if(G.cur<0) G.cur=0;
+  renderAll();
+}
+// 拖拉重排：把 fromIdx 移到 toIdx
+function reorderCard(fromIdx, toIdx){
+  if(fromIdx===toIdx||fromIdx<0||toIdx<0) return;
+  if(fromIdx>=G.cards.length||toIdx>=G.cards.length) return;
+  const moved = G.cards.splice(fromIdx,1)[0];
+  G.cards.splice(toIdx,0,moved);
+  G.cur = toIdx;
+  renderAll();
+}
 
 // ══════════════════════════════════════════
 //  COMPOSITION-SAFE INPUT BINDING
@@ -1688,6 +1714,8 @@ function render(){
       :`<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
 
     div.innerHTML=`
+      <button class="fcard-drag-handle" type="button" title="拖拉重排順序">⋮⋮</button>
+      <button class="fcard-delete" type="button" title="刪除這張卡片">✕</button>
       <div class="fcard-hero" style="padding-top:${hp};background:${c.bgColor}22;position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
         ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor}">${esc(c.title)}</div>`
@@ -1696,8 +1724,40 @@ function render(){
       </div>${btnsHtml}`;
     wrap.appendChild(div);
 
-    // 直接綁定大頭照拖移事件（繞過 innerHTML inline handler 限制）
-    wrap.appendChild(div);
+    // ── 刪除按鈕 ──
+    const delBtnEl = div.querySelector('.fcard-delete');
+    if(delBtnEl){
+      delBtnEl.addEventListener('click', e => {
+        e.stopPropagation();
+        delCardAt(i);
+      });
+    }
+
+    // ── 拖拉重排（HTML5 Drag & Drop）──
+    div.draggable = true;
+    div.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(i));
+      div.classList.add('dragging');
+    });
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+      document.querySelectorAll('.fcard.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+    div.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      div.classList.add('drag-over');
+    });
+    div.addEventListener('dragleave', () => {
+      div.classList.remove('drag-over');
+    });
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.classList.remove('drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      if(!isNaN(fromIdx)) reorderCard(fromIdx, i);
+    });
   });
 
 
