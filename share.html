@@ -676,7 +676,10 @@ async function initLiffOptional() {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: false });
     const isInClient = liff.isInClient();
     const canShare = liff.isApiAvailable?.('shareTargetPicker');
-    if (isInClient || canShare) {
+    // 重要：只在「LINE App 內建瀏覽器 + API 可用」才顯示按鈕
+    // 桌面瀏覽器即使 isApiAvailable=true，shareTargetPicker 訊息也會被 LINE 後端 silent drop
+    // 所以這裡用 AND，不是 OR
+    if (isInClient && canShare) {
       $('#btn-line').classList.remove('hidden');
       return true;
     }

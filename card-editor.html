@@ -2016,9 +2016,10 @@ async function openOrig(){
 //  發布結果 Dialog（公開連結 + QR + LIFF 分享）
 // ══════════════════════════════════════════
 function buildPublicUrl(projectId){
-  // 相對於目前路徑（/line-card-editor/）的 share.html
-  const base = location.href.replace(/[^\/]*(\?.*)?$/, '');
-  return base + 'share.html?id=' + encodeURIComponent(projectId);
+  // 用 LIFF URL 包裝（taichunmin 那招）：
+  // - LINE 內點 → 直接在 LINE App 內開（不踢出去 Safari）+ 可再分享 Flex
+  // - LINE 外管道（IG/Email/桌面瀏覽器）點 → LINE 自動 redirect 到 share.html，照樣看名片
+  return 'https://liff.line.me/' + SHARE_LIFF_ID + '?id=' + encodeURIComponent(projectId);
 }
 
 function showPublishResult(projectId, pendingMsg){
