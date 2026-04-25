@@ -2028,13 +2028,8 @@ function showPublishResult(projectId, pendingMsg){
   const publicUrl = buildPublicUrl(projectId);
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + encodeURIComponent(publicUrl);
 
-  // 檢查 LIFF 能不能直接 shareTargetPicker
-  let canShareInLiff = false;
-  try {
-    canShareInLiff = (typeof liff !== 'undefined') &&
-                     liff.isLoggedIn?.() &&
-                     liff.isApiAvailable?.('shareTargetPicker');
-  } catch(e){}
+  // 注：LIFF 直接傳 LINE 按鈕已移除（外部瀏覽器 shareTargetPicker 不穩定，對方常收不到）
+  // 公開連結是唯一可靠路徑
 
   const overlay = document.createElement('div');
   overlay.id = 'publish-result-overlay';
@@ -2047,7 +2042,7 @@ function showPublishResult(projectId, pendingMsg){
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:32px;margin-bottom:4px">🎉</div>
         <div style="font-size:17px;font-weight:800;color:#111">名片已發布</div>
-        <div style="font-size:12px;color:#888;margin-top:3px">選一種方式分享給客戶</div>
+        <div style="font-size:12px;color:#888;margin-top:3px">複製連結貼到 LINE / IG / Email 都能傳</div>
       </div>
 
       <!-- 公開連結（主） -->
@@ -2072,20 +2067,6 @@ function showPublishResult(projectId, pendingMsg){
           <div style="font-size:11px;color:#888;margin-top:6px">印在實體名片 / 展覽、現場掃碼</div>
         </div>
       </details>
-
-      ${canShareInLiff ? `
-      <!-- LIFF shareTargetPicker -->
-      <button id="pr-line-share"
-        style="width:100%;padding:13px;background:#00b900;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:8px">
-        💬 直接傳給 LINE 好友
-      </button>
-      ` : `
-      <!-- LIFF 還沒準備好（scope / 同意書 / isInClient 未滿足）-->
-      <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:11px;color:#8a6d3b;line-height:1.6">
-        💡 <b>想直接從這裡傳 LINE？</b><br>
-        LIFF 需要額外設定（scope + 同意書）才能在瀏覽器用 shareTargetPicker。暫時先用上面的「公開連結」分享。
-      </div>
-      `}
 
       <button id="pr-dismiss"
         style="width:100%;padding:11px;background:#f5f5f7;color:#333;border:none;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">完成</button>
@@ -2115,30 +2096,6 @@ function showPublishResult(projectId, pendingMsg){
 
   // 點輸入框自動選取
   overlay.querySelector('#pr-url').onclick = (e) => e.target.select();
-
-  // LIFF 直接分享
-  const lineBtn = overlay.querySelector('#pr-line-share');
-  if (lineBtn) {
-    lineBtn.onclick = async () => {
-      try {
-        lineBtn.textContent = '⏳ 開啟 LINE 選人視窗...';
-        lineBtn.disabled = true;
-        const res = await liff.shareTargetPicker([pendingMsg]);
-        if (res?.status === 'success') {
-          toast('✅ 已分享到 LINE');
-          overlay.remove();
-        } else {
-          lineBtn.textContent = '💬 直接傳給 LINE 好友';
-          lineBtn.disabled = false;
-        }
-      } catch(e){
-        console.error(e);
-        toast('❌ 分享失敗：' + e.message);
-        lineBtn.textContent = '💬 直接傳給 LINE 好友';
-        lineBtn.disabled = false;
-      }
-    };
-  }
 
   document.body.appendChild(overlay);
 }
@@ -2221,12 +2178,14 @@ async function showProjects(){
     const rows = projects.map(p => {
       const date = new Date(p.updated_at).toLocaleString('zh-TW');
       const isCurrent = p.id === currentId;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;background:${isCurrent?'#f0f8f0':'#f9f9f9'};border:1.5px solid ${isCurrent?'#00b900':'#eee'};cursor:pointer" onclick="loadProject('${p.id}')">
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:14px;color:#1a1a1a">${p.name}${isCurrent?' ✓':''}</div>
+      const safeName = String(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:10px;background:${isCurrent?'#f0f8f0':'#f9f9f9'};border:1.5px solid ${isCurrent?'#00b900':'#eee'};cursor:pointer" onclick="loadProject('${p.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name||'未命名名片')}${isCurrent?' ✓':''}</div>
           <div style="font-size:11px;color:#999;margin-top:2px">${date}</div>
         </div>
-        <button onclick="event.stopPropagation();deleteProject('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px">🗑</button>
+        <button onclick="event.stopPropagation();renameProject('${p.id}','${safeName}')" title="重命名" style="background:none;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:14px;color:#666;padding:5px 8px;line-height:1">✏️</button>
+        <button onclick="event.stopPropagation();deleteProject('${p.id}')" title="刪除" style="background:none;border:1px solid #fcc;border-radius:6px;cursor:pointer;font-size:14px;color:#c33;padding:5px 8px;line-height:1">🗑</button>
       </div>`;
     }).join('');
     
@@ -2273,6 +2232,34 @@ async function deleteProject(id){
     showProjects();
   } catch(e){
     toast('❌ 刪除失敗：' + e.message);
+  }
+}
+
+async function renameProject(id, oldName){
+  const newName = prompt('輸入新的專案名稱：', oldName || '未命名名片');
+  if(newName === null) return; // 使用者取消
+  const trimmed = newName.trim();
+  if(!trimmed){ toast('❌ 名稱不能空白'); return; }
+  if(trimmed === oldName) return; // 沒改
+  try{
+    const sb = getSB();
+    const { error } = await sb.from('card').update({
+      name: trimmed,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if(error) throw error;
+    // 如果改的是目前正在編輯的專案，同步更新 localStorage 的 projectName
+    if(getProjectId() === id){
+      try{
+        const cached = JSON.parse(localStorage.getItem('line-card-project')||'{}');
+        cached.projectName = trimmed;
+        localStorage.setItem('line-card-project', JSON.stringify(cached));
+      }catch(e){}
+    }
+    toast('✅ 已重命名');
+    showProjects(); // refresh 列表
+  } catch(e){
+    toast('❌ 重命名失敗：' + e.message);
   }
 }
 
