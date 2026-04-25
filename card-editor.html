@@ -8,39 +8,44 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* 70% 灰底 + 埃及藍主 + 橘色次 + LINE 綠第三 */
-  --bg:#2a2a2a;            /* 70% 灰 — 主底色 */
-  --bg-elev-1:#353535;     /* sidebar / 卡片 */
-  --bg-elev-2:#424242;     /* input / hover */
-  --bg-elev-3:#525252;     /* active hover */
-  --white:#353535;
-  --border:rgba(255,255,255,.08);
-  --border-strong:rgba(255,255,255,.16);
+  /* 埃及藍底 + Pixelmator Pro 風格 — 多層藍 + 白色 active */
+  --bg:#1F3FCC;            /* 埃及藍 — 整個畫面底色 */
+  --bg-deep:#142A8A;       /* 更深 — overlay shadow / depth */
+  --bg-elev-1:#1633A1;     /* panel / sidebar — 深一階 */
+  --bg-elev-2:#112880;     /* input — 深兩階 */
+  --bg-elev-3:#4A66E0;     /* hover — 亮一階副藍 */
+  --bg-glass:rgba(31,63,204,.65);  /* 玻璃面板（搭 backdrop-filter）*/
+  --white:#1633A1;          /* sticky name */
+  --border:rgba(255,255,255,.10);
+  --border-strong:rgba(255,255,255,.20);
+  --border-glass:rgba(255,255,255,.14);
 
-  /* 主強調 — 埃及藍（active states / 主 CTA） */
-  --green:#1F3FCC;         /* 沿用變數名讓全站自動切換到藍 */
-  --green-dk:#152d99;
-  --green-lt:rgba(31,63,204,.14);
-  --green-glow:0 0 12px rgba(31,63,204,.45),0 0 2px rgba(31,63,204,.7);
+  /* 主強調 — 白色（active state，藍底白字最 popping，Pixelmator Pro 風）*/
+  --green:#ffffff;
+  --green-dk:#f0f0f0;
+  --green-lt:rgba(255,255,255,.14);
+  --green-glow:0 0 16px rgba(255,255,255,.35),0 0 2px rgba(255,255,255,.6);
 
   /* 次強調 — 橘色 */
-  --orange:#e8791e;
-  --orange-dk:#c95f0c;
-  --orange-lt:rgba(232,121,30,.14);
-  --orange-glow:0 0 10px rgba(232,121,30,.4);
+  --orange:#ff9500;        /* macOS dynamic orange */
+  --orange-dk:#e07a00;
+  --orange-lt:rgba(255,149,0,.18);
+  --orange-glow:0 0 12px rgba(255,149,0,.45);
 
-  /* 第三強調 — LINE 綠（保留給跟 LINE 平台直接相關的元素） */
-  --line-green:#00b900;
-  --line-green-dk:#008f00;
-  --line-green-lt:rgba(0,185,0,.14);
+  /* 第三強調 — LINE 綠（保留給 LINE 平台直接相關元素） */
+  --line-green:#00d166;    /* 偏螢光的 LINE 綠（藍底上更亮）*/
+  --line-green-dk:#00a850;
+  --line-green-lt:rgba(0,209,102,.18);
 
-  --text:#f5f5f5;
-  --text2:#c2c2c2;
-  --text3:#8a8a8a;
-  --red:#ff5252;
-  --yellow:rgba(234,179,8,.14);
-  --r:12px;
+  --text:#ffffff;
+  --text2:rgba(255,255,255,.78);
+  --text3:rgba(255,255,255,.50);
+  --red:#ff6b6b;
+  --yellow:rgba(255,204,0,.18);
+  --r:10px;                /* Pixelmator 風較小圓角 */
+  --r-lg:14px;
   --mono:'SF Mono','Menlo','Monaco','Consolas',monospace;
+  --font:'SF Pro Display','-apple-system','BlinkMacSystemFont','Noto Sans TC',sans-serif;
 }
 body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
 
@@ -50,8 +55,8 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;back
 .topbar-brand-icon{font-size:20px;color:var(--green)}
 .topbar-btns{display:flex;gap:8px}
 .tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;letter-spacing:.02em}
-.tbtn-white{background:var(--green);color:#fff;font-weight:800;box-shadow:var(--green-glow)}
-.tbtn-white:hover{background:var(--green-dk);transform:translateY(-1px);box-shadow:0 0 16px rgba(31,63,204,.6)}
+.tbtn-white{background:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
+.tbtn-white:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 0 20px rgba(255,255,255,.5)}
 .tbtn-outline{background:transparent;color:var(--text2);border:1px solid var(--border-strong)}
 .tbtn-outline:hover{background:var(--bg-elev-2);color:var(--text);border-color:var(--text3)}
 
@@ -63,7 +68,7 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;back
 .card-order-bar{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .card-pill{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .card-pill:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.card-pill.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:800;box-shadow:var(--green-glow)}
+.card-pill.active{background:#fff;border-color:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
 .card-pill-add{border-color:rgba(255,255,255,.16);color:var(--text3)}
 .card-pill-add:hover{border-color:var(--green);color:var(--green);background:rgba(57,255,20,.06)}
 
@@ -96,7 +101,7 @@ textarea.finput{font-family:inherit}
 /* size / ratio picker */
 .size-btn,.ratio-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .size-btn:hover,.ratio-btn:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.size-btn.on,.ratio-btn.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:800;box-shadow:var(--green-glow)}
+.size-btn.on,.ratio-btn.on{background:#fff;border-color:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
 .ratio-btn .rb-shape{border-color:currentColor}
 
 /* publish bar (inline style override) */
@@ -609,7 +614,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
   <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--line-green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s;box-shadow:0 0 12px rgba(0,185,0,.35)" onmouseover="this.style.background='var(--line-green-dk)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--line-green)';this.style.transform=''">🚀 發布到 LINE</button>
   <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='var(--orange-lt)'" onmouseout="this.style.background='transparent'" title="複製 JSON 到剪貼簿">📋 複製</button>
-  <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;box-shadow:var(--green-glow)" onmouseover="this.style.background='var(--green-dk)'" onmouseout="this.style.background='var(--green)'" title="儲存到雲端">☁️ 雲端存檔</button>
+  <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:none;background:#fff;color:var(--bg);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;box-shadow:var(--green-glow)" onmouseover="this.style.background='#f0f0f0';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#fff';this.style.transform=''" title="儲存到雲端">☁️ 雲端存檔</button>
   <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border-strong);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='var(--bg-elev-2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text2)'" title="專案列表">📂 專案</button>
 </div>
 
