@@ -8,122 +8,31 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* === Pixelmator Pro 真實標準（macOS dark mode）=== */
-  /* Chrome — neutral grey，不是飽和色（Apple HIG）*/
-  --bg:#1c1c1e;            /* Primary bg — macOS standard */
-  --bg-elev-1:#2c2c2e;     /* Sidebar / panel */
-  --bg-elev-2:#3a3a3c;     /* Input / hover */
-  --bg-elev-3:#48484a;     /* Active hover */
-  --bg-glass:rgba(28,28,30,.72);          /* Toolbar vibrancy */
-  --bg-glass-strong:rgba(28,28,30,.88);   /* Sidebar vibrancy */
-  --white:#2c2c2e;
-  --border:rgba(255,255,255,.08);
-  --border-strong:rgba(255,255,255,.18);
-  --separator:rgba(255,255,255,.06);
-
-  /* Accent — Apple 系統藍（柔和、用得節制） */
-  --green:#007AFF;         /* macOS system blue */
-  --green-dk:#0056CC;
-  --green-lt:rgba(0,122,255,.15);
-  --green-glow:0 0 0 3px rgba(0,122,255,.25);  /* Apple focus ring 風格 */
-
-  /* 次要色（Apple 系統色，使用節制）*/
-  --orange:#FF9500;        /* macOS dynamic orange */
-  --orange-lt:rgba(255,149,0,.15);
-  --line-green:#34C759;    /* macOS system green */
-  --line-green-dk:#248A3D;
-  --line-green-lt:rgba(52,199,89,.15);
-
-  /* Text hierarchy（Apple HIG）*/
-  --text:#ffffff;
-  --text2:rgba(235,235,245,.60);
-  --text3:rgba(235,235,245,.30);
-  --red:#FF453A;
-  --yellow:rgba(255,204,0,.18);
-
-  /* Geometry — Apple 標準 */
-  --r:8px;
-  --r-lg:12px;
-  --mono:'SF Mono','Menlo','Monaco','Consolas',monospace;
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Noto Sans TC',sans-serif;
+  --bg:#f0f2f5;
+  --white:#fff;
+  --border:#e0e0e0;
+  --green:#00b900;
+  --green-dk:#008f00;
+  --green-lt:#e6f9e6;
+  --text:#1a1a1a;
+  --text2:#555;
+  --text3:#999;
+  --red:#e53935;
+  --yellow:#fff8e1;
+  --r:12px;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
-/* ─ TOPBAR ─ Pixelmator Pro toolbar 風（vibrancy 半透明）*/
-.topbar{background:var(--bg-glass);backdrop-filter:blur(40px) saturate(1.5);-webkit-backdrop-filter:blur(40px) saturate(1.5);color:var(--text);padding:0 16px;height:48px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--separator)}
-.topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;letter-spacing:.04em}
-.topbar-brand-icon{font-size:20px;color:var(--green)}
+/* ─ TOPBAR ─ */
+.topbar{background:var(--green);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,185,0,.3)}
+.topbar-brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.topbar-brand-icon{font-size:22px}
 .topbar-btns{display:flex;gap:8px}
-.tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);font-family:inherit;transition:all .15s;letter-spacing:.02em}
-.tbtn-white{background:var(--green);color:#fff;font-weight:600;border:none}
-.tbtn-white:hover{background:var(--green-dk)}
-.tbtn-outline{background:transparent;color:var(--text2);border:1px solid var(--border-strong)}
-.tbtn-outline:hover{background:var(--bg-elev-2);color:var(--text);border-color:var(--text3)}
-
-/* ════════════════════════════════════════════════════════
-   攝影工作室風 — Dark mode 全覆寫
-   ════════════════════════════════════════════════════════ */
-.sidebar{background:var(--bg-elev-1)}
-.card-selector{background:var(--bg-elev-2);border-color:var(--border)}
-.card-order-bar{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
-.card-pill{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
-.card-pill:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.card-pill.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
-.card-pill-add{border-color:rgba(255,255,255,.16);color:var(--text3)}
-.card-pill-add:hover{border-color:var(--green);color:var(--green);background:rgba(57,255,20,.06)}
-
-.icon-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
-.icon-btn:hover{background:var(--bg-elev-3);border-color:var(--text3);color:var(--text)}
-.icon-btn.danger{border-color:rgba(239,68,68,.3);color:var(--red);background:rgba(239,68,68,.05)}
-.icon-btn.danger:hover{background:rgba(239,68,68,.12);border-color:var(--red)}
-
-.flabel{color:var(--text);font-weight:700;letter-spacing:.01em}
-.fhint{color:var(--text3)}
-.finput{background:var(--bg-elev-2);color:var(--text);border-color:var(--border);transition:all .15s}
-.finput::placeholder{color:var(--text3)}
-.finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(57,255,20,.15);background:var(--bg-elev-3)}
-textarea.finput{font-family:inherit}
-
-/* upload area */
-.upload-area{background:var(--bg-elev-2);border-color:var(--border-strong);border-style:dashed}
-.upload-area:hover,.upload-area.drag{background:rgba(57,255,20,.06);border-color:var(--green)}
-.upload-text{color:var(--text)}
-.upload-hint{color:var(--text3)}
-.upload-clear{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:var(--red)}
-.upload-clear:hover{background:rgba(239,68,68,.15)}
-
-/* color picker */
-.color-native{background:var(--bg-elev-2);border-color:var(--border-strong)}
-.color-val{color:var(--text3);font-family:var(--mono)}
-.cpx{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
-.cpx.on{box-shadow:0 0 0 2px var(--bg-elev-1),0 0 0 4px var(--green)}
-
-/* size / ratio picker */
-.size-btn,.ratio-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
-.size-btn:hover,.ratio-btn:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.size-btn.on,.ratio-btn.on{background:#fff;border-color:#fff;color:var(--bg);font-weight:800;box-shadow:var(--green-glow)}
-.ratio-btn .rb-shape{border-color:currentColor}
-
-/* publish bar — Pixelmator Pro vibrancy（半透明深灰 + blur） */
-#publish-bar{background:var(--bg-glass-strong)!important;border-top:1px solid var(--separator)!important;backdrop-filter:blur(40px) saturate(1.5)!important;-webkit-backdrop-filter:blur(40px) saturate(1.5)!important;box-shadow:0 -1px 0 rgba(0,0,0,.3),0 -8px 24px rgba(0,0,0,.2)!important;padding:12px 24px!important;gap:8px!important}
-#publish-bar button{transition:all .12s ease}
-
-/* 預覽區（右側）— 名片預覽底色 */
-.preview-area,.preview-wrap{background:var(--bg)!important;color:var(--text)!important}
-.preview-title{color:var(--text2)!important;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
-.live-badge{background:var(--line-green-lt)!important;color:var(--line-green)!important;border:none!important;font-weight:600}
-
-/* json output / pre */
-pre,#json-out{background:var(--bg-elev-2);color:var(--text2);border:1px solid var(--border);border-radius:10px}
-
-/* toast */
-.toast{background:rgba(22,22,22,.95)!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
-
-/* 滾動條 dark */
-::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+.tbtn{padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.tbtn-white{background:#fff;color:var(--green)}
+.tbtn-white:hover{background:#e6ffe6}
+.tbtn-outline{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+.tbtn-outline:hover{background:rgba(255,255,255,.25)}
 
 /* ─ LAYOUT ─ */
 .layout{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 52px)}
@@ -133,7 +42,7 @@ pre,#json-out{background:var(--bg-elev-2);color:var(--text2);border:1px solid va
 
 /* Card selector */
 .card-selector{padding:12px 16px;background:#f8f8f8;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.card-pill{padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--bg-elev-2);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);transition:all .15s;white-space:nowrap}
+.card-pill{padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);transition:all .15s;white-space:nowrap}
 .card-pill:hover{border-color:var(--green);color:var(--green)}
 .card-pill.active{background:var(--green);border-color:var(--green);color:#fff}
 .card-pill-add{padding:6px 12px;border-radius:99px;border:1.5px dashed #ccc;background:transparent;font-size:13px;cursor:pointer;color:var(--text3);transition:all .15s;font-family:inherit}
@@ -150,12 +59,12 @@ pre,#json-out{background:var(--bg-elev-2);color:var(--text2);border:1px solid va
 .field:last-child{margin-bottom:0}
 .flabel{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .fhint{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.5}
-.finput{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);outline:none;transition:all .15s;background:var(--bg-elev-2)}
+.finput{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s;background:#fff}
 .finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,185,0,.08)}
 textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 
 /* Upload area */
-.upload-area{border:2px dashed var(--border-strong);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-elev-2);position:relative}
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;position:relative}
 .upload-area:hover,.upload-area.drag{border-color:var(--green);background:var(--green-lt)}
 .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .upload-icon{font-size:32px;margin-bottom:6px}
@@ -177,15 +86,15 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 
 /* Size picker */
 .size-row{display:flex;gap:6px}
-.size-btn{flex:1;padding:8px 4px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;text-align:center;cursor:pointer;background:var(--bg-elev-2);color:var(--text);transition:all .15s;font-family:inherit}
-.size-btn:hover{border-color:#fff;color:#fff;background:var(--bg-elev-3)}
-.size-btn.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.size-btn{flex:1;padding:8px 4px;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:600;text-align:center;cursor:pointer;background:#fff;color:var(--text2);transition:all .15s;font-family:inherit}
+.size-btn:hover{border-color:var(--green);color:var(--green)}
+.size-btn.on{background:var(--green);border-color:var(--green);color:#fff}
 
 /* Ratio picker */
 .ratio-row{display:flex;gap:6px}
-.ratio-btn{flex:1;padding:8px 6px;border:1.5px solid var(--border);border-radius:9px;text-align:center;cursor:pointer;background:var(--bg-elev-2);color:var(--text);transition:all .15s;font-family:inherit}
-.ratio-btn:hover{border-color:#fff;background:var(--bg-elev-3)}
-.ratio-btn.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.ratio-btn{flex:1;padding:8px 6px;border:1.5px solid var(--border);border-radius:9px;text-align:center;cursor:pointer;background:#fff;color:var(--text2);transition:all .15s;font-family:inherit}
+.ratio-btn:hover{border-color:var(--green)}
+.ratio-btn.on{background:var(--green);border-color:var(--green);color:#fff}
 .ratio-btn .rb-shape{width:32px;height:20px;border:2px solid currentColor;border-radius:3px;margin:0 auto 4px}
 .ratio-btn.on .rb-shape{border-color:#fff}
 .ratio-btn .rb-label{font-size:11px;font-weight:700}
@@ -424,12 +333,12 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
   <div class="sidebar">
 
     <!-- 圖片比例（最優先設定） -->
-    <div style="padding:14px 16px;background:var(--bg-elev-1);border-bottom:1px solid var(--border)">
-      <div class="flabel" style="margin-bottom:6px;font-size:14px;color:var(--text)">🔑 第一步：設定 API Keys</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
+    <div style="padding:14px 16px;background:#fff8e1;border-bottom:2px solid #ffe082">
+      <div class="flabel" style="margin-bottom:6px;font-size:14px">🔑 第一步：設定 API Keys</div>
+      <div style="font-size:12px;color:#795700;line-height:1.7;margin-bottom:10px">
         這個工具需要兩個免費 API Key 才能完整運作：<br>
-        <b style="color:var(--text)">① ImgBB</b> — 把你上傳的照片轉成網址，LINE 才能正確顯示圖片（base64 不被支援）<br>
-        <b style="color:var(--text)">② remove.bg</b> — 大頭照自動去背功能，不填就無法使用去背
+        <b>① ImgBB</b> — 把你上傳的照片轉成網址，LINE 才能正確顯示圖片（base64 不被支援）<br>
+        <b>② remove.bg</b> — 大頭照自動去背功能，不填就無法使用去背
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -437,26 +346,26 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
           <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">📤 ImgBB Key <span style="font-weight:400;color:var(--text3)">（免費，無限張）</span></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input class="finput" id="imgbb-key" type="password" placeholder="貼上 ImgBB API Key" style="flex:1;font-size:12px">
-            <button class="tbtn tbtn-outline" style="white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://api.imgbb.com/','_blank')">免費取得 ↗</button>
+            <button class="tbtn tbtn-outline" style="background:#fff;color:#0077cc;border:1.5px solid #b3d9ff;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://api.imgbb.com/','_blank')">免費取得 ↗</button>
           </div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">✂️ remove.bg Key <span style="font-weight:400;color:var(--text3)">（免費 50 張/月）</span></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input class="finput" id="rmbg-api-key" type="password" placeholder="貼上 remove.bg API Key" style="flex:1;font-size:12px">
-            <button class="tbtn tbtn-outline" style="white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://www.remove.bg/api','_blank')">免費取得 ↗</button>
+            <button class="tbtn tbtn-outline" style="background:#fff;color:#9c27b0;border:1.5px solid #e1bee7;white-space:nowrap;font-size:12px;padding:6px 10px" onclick="window.open('https://www.remove.bg/api','_blank')">免費取得 ↗</button>
           </div>
         </div>
 
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">
+        <div style="font-size:10px;color:#a06000;margin-top:2px">
           Key 只存在你的瀏覽器，不會上傳到任何伺服器。
-          <span style="cursor:pointer;text-decoration:underline;color:var(--green)" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
+          <span style="cursor:pointer;text-decoration:underline" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
         </div>
       </div>
     </div>
 
-    <div style="padding:12px 16px;background:var(--bg-elev-1);border-bottom:1px solid var(--border)">
-      <div class="flabel" style="margin-bottom:8px;color:var(--text)">📐 名片圖片比例 <span style="font-weight:400;font-size:11px;color:var(--text3)">（全部卡片共用，建議先選）</span></div>
+    <div style="padding:12px 16px;background:#f0f8f0;border-bottom:1.5px solid #c8e6c9">
+      <div class="flabel" style="margin-bottom:8px">📐 名片圖片比例 <span style="font-weight:400;font-size:11px;color:var(--text3)">（全部卡片共用，建議先選）</span></div>
       <div class="ratio-row" id="ratio-row">
         <button class="ratio-btn on" data-v="20:13" onclick="pickRatio(this)">
           <div class="rb-shape" style="width:36px;height:23px"></div>
@@ -486,29 +395,29 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
       </div>
     </div>
     <!-- 自訂顏色 -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg-elev-1)">
-      <div class="flabel" style="margin-bottom:8px;color:var(--text)">🎨 自訂顏色（全域共用）</div>
+    <div style="padding:12px 16px;border-bottom:1.5px solid var(--border);background:#fff">
+      <div class="flabel" style="margin-bottom:8px">🎨 自訂顏色（全域共用）</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:var(--text2)">色1</span>
+          <span style="font-size:11px;color:#888">色1</span>
           <input type="color" id="custom-color-0" value="#ffffff"
-            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
+            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
             oninput="setCustomColor(0,this.value)">
-          <span id="cv-custom-0" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
+          <span id="cv-custom-0" style="font-size:10px;color:#aaa">#ffffff</span>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:var(--text2)">色2</span>
+          <span style="font-size:11px;color:#888">色2</span>
           <input type="color" id="custom-color-1" value="#ffffff"
-            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
+            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
             oninput="setCustomColor(1,this.value)">
-          <span id="cv-custom-1" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
+          <span id="cv-custom-1" style="font-size:10px;color:#aaa">#ffffff</span>
         </div>
         <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:var(--text2)">色3</span>
+          <span style="font-size:11px;color:#888">色3</span>
           <input type="color" id="custom-color-2" value="#ffffff"
-            style="width:34px;height:28px;border:1px solid var(--border-strong);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg-elev-2)"
+            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
             oninput="setCustomColor(2,this.value)">
-          <span id="cv-custom-2" style="font-size:10px;color:var(--text3);font-family:var(--mono)">#ffffff</span>
+          <span id="cv-custom-2" style="font-size:10px;color:#aaa">#ffffff</span>
         </div>
       </div>
       <div class="fhint">設定後會出現在所有顏色選項的第一排，全部卡片共用。</div>
@@ -614,10 +523,10 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 
 <!-- ══ 固定發布列（右側底部） ══ -->
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
-  <button onclick="openOrig()" style="flex:1;padding:11px 20px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:600;letter-spacing:-.005em;cursor:pointer;font-family:inherit;transition:background .15s" onmouseover="this.style.background='var(--green-dk)'" onmouseout="this.style.background='var(--green)'">🚀 發布到 LINE</button>
-  <button onclick="doCopy()" style="padding:11px 18px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.3)'" onmouseout="this.style.background='transparent';this.style.borderColor='var(--border-strong)'" title="複製 JSON 到剪貼簿">📋 複製</button>
-  <button onclick="doCloudSave()" style="padding:11px 18px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.3)'" onmouseout="this.style.background='transparent';this.style.borderColor='var(--border-strong)'" title="儲存到雲端">☁️ 雲端存檔</button>
-  <button onclick="showProjects()" style="padding:11px 18px;border-radius:8px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text2)'" title="專案列表">📂 專案</button>
+  <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'">🚀 發布到 LINE</button>
+  <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="複製 JSON 到剪貼簿">📋 複製</button>
+  <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
+  <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="專案列表">📂 專案</button>
 </div>
 
 <!-- 發布步驟說明（收折） -->
