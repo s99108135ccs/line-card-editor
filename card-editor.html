@@ -378,6 +378,15 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
           Key 只存在你的瀏覽器，不會上傳到任何伺服器。
           <span style="cursor:pointer;text-decoration:underline" onclick="['imgbb-key','rmbg-api-key'].forEach(id=>{const el=document.getElementById(id);el.type=el.type==='password'?'text':'password'})">顯示/隱藏</span>
         </div>
+
+        <!-- 圖片上傳狀態 bar（IndexedDB queue） -->
+        <div style="margin-top:6px;padding:8px 10px;background:#fff;border:1px solid #f0d99a;border-radius:6px;font-size:11px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-weight:700;color:#666">☁️ 圖片上傳狀態</div>
+            <button onclick="runSystemDiagnosis()" style="padding:2px 8px;font-size:10px;border:1px solid #ddd;background:#fafafa;color:#666;border-radius:4px;cursor:pointer" title="把所有狀態 dump 給開發者看">🔍 診斷</button>
+          </div>
+          <div id="upload-status-bar" style="color:#999">載入中…</div>
+        </div>
       </div>
     </div>
 
@@ -445,9 +454,10 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
     <div class="card-selector" id="card-selector"></div>
     <div class="card-order-bar">
       <span id="card-order-info" style="font-weight:600"></span>
-      <div style="display:flex;gap:5px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="icon-btn" title="往左移" onclick="moveCard(-1)">◀ 往前</button>
         <button class="icon-btn" title="往右移" onclick="moveCard(1)">往後 ▶</button>
+        <button class="icon-btn" title="把這張的樣式套用到所有卡片（顏色、avatar 設定、footer 顏色）" onclick="syncStyleToAll()" style="background:#06c755;color:#fff">🔄 同步樣式</button>
         <button class="icon-btn danger" onclick="delCard()">刪除</button>
       </div>
     </div>
@@ -981,6 +991,12 @@ function newCard(){
     link:'', bgColor:'#ffffff',
     bgImgData:'', bgImgUrl:'',
     bgFlipX: false,         // 背景水平翻轉
+    bgMode: 'image',        // 'image'=用圖片 / 'color'=用純色
+    bgSolidColor: '#0d0d0d',// 純色模式下的背景顏色
+    heroTitle: '',          // 疊在背景上的標題文字
+    heroTitleColor:'#ffffff',
+    heroTitleSize: 'md',    // sm/md/lg
+    heroTitlePos:  'center',// left/center/right
     avatarData:'', avatarUrl:'',
     avatarFlipX: false,      // 大頭照水平翻轉
     avatarSize: 'md',
@@ -1076,6 +1092,35 @@ function renderTabs(){
     `現在編輯：第 ${G.cur+1} 張，共 ${G.cards.length} 張`;
 }
 function addCard(){G.cards.push(newCard());G.cur=G.cards.length-1;renderAll()}
+
+// 把目前選中那張卡的「樣式」套用到所有其他卡片
+// 同步：顏色、avatar 大小/位置/形狀/縮放、footer bg、翻轉
+// 不同步：title/desc/link/圖片/buttons（這些是各卡個別內容）
+function syncStyleToAll(){
+  if(G.cards.length<=1){
+    toast('只有一張卡片，沒得同步');
+    return;
+  }
+  if(!confirm(`確定要把「第 ${G.cur+1} 張」的樣式套用到全部 ${G.cards.length} 張卡片嗎？\n\n會同步：顏色配色、avatar 大小/位置/形狀、footer 顏色、翻轉設定\n不會動：標題、描述、連結、圖片、按鈕`)){
+    return;
+  }
+  const src = G.cards[G.cur];
+  const styleKeys = [
+    'titleColor','descColor','bgColor','footerBg',
+    'avatarSize','avatarPos','avatarShape','avatarScale',
+    'bgFlipX','avatarFlipX',
+    'bgMode','bgSolidColor',
+    'heroTitleColor','heroTitleSize','heroTitlePos'
+  ];
+  let count = 0;
+  G.cards.forEach((c,i)=>{
+    if(i===G.cur) return;
+    styleKeys.forEach(k=>{ c[k] = src[k]; });
+    count++;
+  });
+  renderAll();
+  toast(`✓ 已同步樣式到其他 ${count} 張卡片`);
+}
 function moveCard(d){
   const j=G.cur+d;
   if(j<0||j>=G.cards.length)return;
@@ -1221,20 +1266,77 @@ function renderFields(){
 
     <div class="field">
       <div class="flabel">🖼️ 名片圖片</div>
+
+      <!-- 背景模式切換：圖片 / 純色 -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="bg-mode-tab${c.bgMode!=='color'?' on':''}" onclick="setBgMode('image')" style="flex:1;padding:8px;border:1.5px solid ${c.bgMode!=='color'?'#06c755':'#ddd'};background:${c.bgMode!=='color'?'#06c755':'#fff'};color:${c.bgMode!=='color'?'#fff':'#666'};border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">📷 用圖片</button>
+        <button class="bg-mode-tab${c.bgMode==='color'?' on':''}" onclick="setBgMode('color')" style="flex:1;padding:8px;border:1.5px solid ${c.bgMode==='color'?'#06c755':'#ddd'};background:${c.bgMode==='color'?'#06c755':'#fff'};color:${c.bgMode==='color'?'#fff':'#666'};border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">🎨 純色塊</button>
+      </div>
+
       <div class="img-two-col">
+        ${c.bgMode==='color' ? `
+        <div class="img-layer-box" id="bg-zone" style="background:${c.bgSolidColor};display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,.3)">
+          <div style="font-size:24px;opacity:.7;color:${pickContrastColor(c.bgSolidColor)}">🎨</div>
+          <div style="font-size:11px;font-weight:600;color:${pickContrastColor(c.bgSolidColor)};margin-top:4px">純色背景</div>
+          <div style="font-size:10px;color:${pickContrastColor(c.bgSolidColor)};opacity:.7;margin-top:2px">${c.bgSolidColor}</div>
+        </div>
+        ` : `
         <div class="img-layer-box" id="bg-zone"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="onBgDrop(event)">${bgZone}</div>
+        `}
         <div class="img-layer-box" id="av-zone"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="onAvDrop(event)">${avZone}</div>
       </div>
+
+      ${c.bgMode==='color' ? `
+      <div style="margin-top:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">背景純色</div>
+        ${mkColorWidget('bgSolidColor'+ci, c.bgSolidColor, BG_COLORS, v=>updCard('bgSolidColor',v))}
+      </div>
+      <div class="fhint" style="margin-top:8px">大頭照網址：</div>
+      <div style="margin-top:6px">
+        <input class="finput" type="url" id="av-url" placeholder="大頭照網址 https://..." value="${esc(c.avatarUrl)}" style="font-size:11px">
+      </div>
+      ` : `
       <div class="fhint" style="margin-top:6px">也可以貼上圖片網址：</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
         <input class="finput" type="url" id="bg-url" placeholder="背景圖網址 https://..." value="${esc(c.bgImgUrl)}" style="font-size:11px">
         <input class="finput" type="url" id="av-url" placeholder="大頭照網址 https://..." value="${esc(c.avatarUrl)}" style="font-size:11px">
+      </div>
+      `}
+    </div>
+
+    <!-- 標題文字（疊在背景上） -->
+    <div class="field">
+      <div class="flabel">🏷️ 背景標題（疊在背景上）</div>
+      <input class="finput" type="text" id="f-hero-title" placeholder="例：THE TAG（留空不顯示）" value="${esc(c.heroTitle)}">
+      <div class="fhint" style="margin-bottom:8px">會以大字疊在背景圖／純色上方。留空就不顯示。</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;${c.heroTitle?'':'opacity:.5;pointer-events:none'}">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">大小</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="av-opt${c.heroTitleSize==='sm'?' on':''}" onclick="setHeroTitleSize('sm',this)">小</button>
+            <button class="av-opt${c.heroTitleSize==='md'?' on':''}" onclick="setHeroTitleSize('md',this)">中</button>
+            <button class="av-opt${c.heroTitleSize==='lg'?' on':''}" onclick="setHeroTitleSize('lg',this)">大</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">位置</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="av-opt${c.heroTitlePos==='left'?' on':''}" onclick="setHeroTitlePos('left',this)">← 左</button>
+            <button class="av-opt${c.heroTitlePos==='center'?' on':''}" onclick="setHeroTitlePos('center',this)">中間</button>
+            <button class="av-opt${c.heroTitlePos==='right'?' on':''}" onclick="setHeroTitlePos('right',this)">右 →</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'}">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px">標題顏色</div>
+        ${mkColorWidget('heroTitleColor'+ci, c.heroTitleColor, TEXT_COLORS, v=>updCard('heroTitleColor',v))}
       </div>
     </div>
 
@@ -1321,6 +1423,7 @@ function renderFields(){
   bindInput(document.getElementById('f-title'), v => updCard('title', v));
   bindInput(document.getElementById('f-desc'),  v => updCard('desc', v));
   bindInput(document.getElementById('f-link'),  v => updCard('link', v));
+  bindInput(document.getElementById('f-hero-title'), v => updCard('heroTitle', v));
   bindInput(document.getElementById('bg-url'),  v => { if(v.startsWith('http')) triggerBgUrl(v); });
   bindInput(document.getElementById('av-url'),  v => { if(v.startsWith('http')) triggerAvUrl(v); });
 
@@ -1373,9 +1476,8 @@ function onBgDrop(e){
 }
 function triggerBgUrl(url){
   openCrop(url, dataUrl=>{
-    G.cards[G.cur].bgImgData=dataUrl;
-    G.cards[G.cur].bgImgUrl=url;
-    refreshLayerPreview();render();
+    // 從 URL 拉圖也走 persist：上傳 ImgBB 拿到自家網址（避免外部 URL 失效）
+    persistCropResult(dataUrl, 'bg');
   });
 }
 function reEditBg(e){
@@ -1384,8 +1486,8 @@ function reEditBg(e){
   const src=c.bgImgData||c.bgImgUrl;
   if(!src)return;
   openCrop(src,dataUrl=>{
-    G.cards[G.cur].bgImgData=dataUrl;
-    refreshLayerPreview();render();
+    // 重新裁切完也要重傳 ImgBB（因為裁出來是新圖）
+    persistCropResult(dataUrl, 'bg');
   });
 }
 function clearBg(e){
@@ -1419,9 +1521,7 @@ function onAvDrop(e){
 }
 function triggerAvUrl(url){
   openCrop(url, dataUrl=>{
-    G.cards[G.cur].avatarData=dataUrl;
-    G.cards[G.cur].avatarUrl=url;
-    refreshLayerPreview();render();
+    persistCropResult(dataUrl, 'av');
   }, true);
 }
 function reEditAv(e){
@@ -1430,8 +1530,7 @@ function reEditAv(e){
   const src=c.avatarData||c.avatarUrl;
   if(!src)return;
   openCrop(src,dataUrl=>{
-    G.cards[G.cur].avatarData=dataUrl;
-    refreshLayerPreview();render();
+    persistCropResult(dataUrl, 'av');
   }, true);
 }
 function clearAv(e){
@@ -1459,6 +1558,34 @@ function setAvPos(v,el){
   el.closest('div').querySelectorAll('.av-opt').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   refreshLayerPreview();render();
+}
+
+// ── 背景模式 + Hero 標題 handlers ──
+function setBgMode(mode){
+  G.cards[G.cur].bgMode = mode;
+  renderFields(); render();
+}
+function setHeroTitleSize(v,el){
+  G.cards[G.cur].heroTitleSize=v;
+  el.closest('div').querySelectorAll('.av-opt').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+function setHeroTitlePos(v,el){
+  G.cards[G.cur].heroTitlePos=v;
+  el.closest('div').querySelectorAll('.av-opt').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+// 自動判斷純色背景上文字該用黑色還白色（依亮度）
+function pickContrastColor(hex){
+  if(!hex || typeof hex !== 'string') return '#ffffff';
+  const m = hex.replace('#','').match(/.{2}/g);
+  if(!m || m.length < 3) return '#ffffff';
+  const [r,g,b] = m.map(x=>parseInt(x,16));
+  // YIQ 亮度公式
+  const yiq = (r*299 + g*587 + b*114) / 1000;
+  return yiq >= 140 ? '#111111' : '#ffffff';
 }
 
 // ── shared ──
@@ -1510,14 +1637,8 @@ async function readFileThenCrop(file, layer){
     const dataUrl = await resizeImageFile(file, 1600, 0.85);
     if(file.size > 1024 * 1024) toast('');
     openCrop(dataUrl, dataUrl=>{
-      if(layer==='bg'){
-        G.cards[G.cur].bgImgData=dataUrl;
-        G.cards[G.cur].bgImgUrl='[本地圖片]';
-      } else {
-        G.cards[G.cur].avatarData=dataUrl;
-        G.cards[G.cur].avatarUrl='[本地圖片]';
-      }
-      refreshLayerPreview();render();
+      // 選圖完成 → 立刻上傳 ImgBB（內含 fallback 邏輯）
+      persistCropResult(dataUrl, layer);
     }, layer==='av');
   } catch(err) {
     console.error(err);
@@ -1539,11 +1660,13 @@ function composeHero(c){
     canvas.width=W; canvas.height=H;
     const ctx=canvas.getContext('2d');
 
-    const bgSrc=c.bgImgData||(c.bgImgUrl&&c.bgImgUrl!=='[本地圖片]'?c.bgImgUrl:'');
-    const avSrc=c.avatarData||(c.avatarUrl&&c.avatarUrl!=='[本地圖片]'?c.avatarUrl:'');
+    const isColorMode = c.bgMode === 'color';
+    // 純色模式時，故意忽略 bgImgData/Url 不畫圖
+    const bgSrc = isColorMode ? '' : (c.bgImgData||(c.bgImgUrl&&c.bgImgUrl!=='[本地圖片]'?c.bgImgUrl:''));
+    const avSrc = c.avatarData||(c.avatarUrl&&c.avatarUrl!=='[本地圖片]'?c.avatarUrl:'');
 
-    // fill bg color first
-    ctx.fillStyle=c.bgColor||'#ffffff';
+    // fill bg color first（純色模式用 bgSolidColor，圖片模式用 bgColor 當底色）
+    ctx.fillStyle = isColorMode ? (c.bgSolidColor||'#0d0d0d') : (c.bgColor||'#ffffff');
     ctx.fillRect(0,0,W,H);
 
     const drawBg=()=>new Promise(res=>{
@@ -1625,7 +1748,59 @@ function composeHero(c){
       img.src=avSrc;
     });
 
+    // 疊加 hero 標題文字（在背景上、avatar 之上）
+    const drawHeroTitle = () => {
+      if(!c.heroTitle) return;
+      const sizeMap = {sm: W*0.055, md: W*0.085, lg: W*0.12};
+      const fontSize = sizeMap[c.heroTitleSize||'md'];
+      ctx.font = `800 ${fontSize}px -apple-system,"PingFang TC","Helvetica Neue",Arial,sans-serif`;
+      ctx.textBaseline = 'middle';
+      let x;
+      if(c.heroTitlePos === 'left'){ ctx.textAlign = 'left';   x = W*0.05; }
+      else if(c.heroTitlePos === 'right'){ ctx.textAlign = 'right';  x = W*0.95; }
+      else { ctx.textAlign = 'center'; x = W/2; }
+      const y = H/2;
+      // 文字陰影（讓深色文字在亮背景或反之都看得清楚）
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = c.heroTitleColor || '#ffffff';
+      // 自動換行（最多兩行，每行最大 90% W）
+      const maxWidth = W * 0.9;
+      const words = c.heroTitle.split(/(\s+)/);
+      const lines = [];
+      let line = '';
+      // 中文或無空格時直接量整段
+      if(ctx.measureText(c.heroTitle).width <= maxWidth){
+        lines.push(c.heroTitle);
+      } else {
+        // 簡單斷字
+        let cur = '';
+        for(const ch of c.heroTitle){
+          if(ctx.measureText(cur+ch).width > maxWidth){
+            lines.push(cur);
+            cur = ch;
+            if(lines.length >= 2) break;
+          } else {
+            cur += ch;
+          }
+        }
+        if(cur && lines.length < 2) lines.push(cur);
+      }
+      const lineH = fontSize * 1.2;
+      const totalH = lineH * lines.length;
+      const startY = y - totalH/2 + lineH/2;
+      lines.forEach((ln, i) => {
+        ctx.fillText(ln, x, startY + i*lineH);
+      });
+      // reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    };
+
     drawBg().then(drawAv).then(()=>{
+      drawHeroTitle();
       resolve(canvas.toDataURL('image/png'));
     });
   });
@@ -1807,13 +1982,30 @@ function render(){
       </div>
       <div class="av-drag-hint">拖移調整位置 · 右下角或滾輪縮放</div>
     `:'';
-    const bgEl=bgSrc?`<img src="${bgSrc}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;${c.bgFlipX?'transform:scaleX(-1);':''}">`:'';
-    const heroContent=bgSrc||avSrc
-      ?`${bgEl}${avatarEl}`
-      :`<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
+    // 背景模式：純色 or 圖片
+    const isColorMode = c.bgMode === 'color';
+    const bgEl = isColorMode
+      ? `<div style="position:absolute;inset:0;background:${c.bgSolidColor||'#0d0d0d'}"></div>`
+      : (bgSrc?`<img src="${bgSrc}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;${c.bgFlipX?'transform:scaleX(-1);':''}">`:'');
+
+    // Hero 標題（疊在背景上）
+    const heroTitleSizeMap = {sm:'18px', md:'26px', lg:'36px'};
+    const heroTitleAlign = c.heroTitlePos === 'left' ? 'flex-start'
+      : c.heroTitlePos === 'right' ? 'flex-end' : 'center';
+    const heroTitleTextAlign = c.heroTitlePos || 'center';
+    const heroTitleEl = c.heroTitle ? `
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlign};padding:0 16px;z-index:3;pointer-events:none">
+        <div style="font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word">${esc(c.heroTitle)}</div>
+      </div>
+    ` : '';
+
+    const hasContent = isColorMode || bgSrc || avSrc || c.heroTitle;
+    const heroContent = hasContent
+      ? `${bgEl}${heroTitleEl}${avatarEl}`
+      : `<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
 
     div.innerHTML=`
-      <div class="fcard-hero" style="padding-top:${hp};background:${c.bgColor}22;position:relative;overflow:visible">${heroContent}</div>
+      <div class="fcard-hero" style="padding-top:${hp};background:${isColorMode?'transparent':c.bgColor+'22'};position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
         ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor}">${esc(c.title)}</div>`
           :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic">標題...</div>`}
@@ -1896,6 +2088,372 @@ function buildJson(heroDataUrls){
 }
 
 // ══════════════════════════════════════════
+//  IMAGE UPLOAD QUEUE (IndexedDB-backed)
+//  ── 三層防護網 ──
+//  1. 圖選下去：寫 IndexedDB（永不失敗）→ UI 立刻有圖
+//  2. async 推 ImgBB：成功就清 IDB；失敗保留 IDB，5min 後重試（exponential backoff）
+//  3. 開 app 自動掃 IDB pending → 全部重新上傳
+//  即使斷網/crash/瀏覽器關，圖都在 IDB，永遠不掉
+// ══════════════════════════════════════════
+const IDB_NAME = 'line-card-db';
+const IDB_VERSION = 1;
+const IDB_STORE = 'pending_uploads';
+
+let _idbPromise = null;
+function openIdb(){
+  if(_idbPromise) return _idbPromise;
+  _idbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)){
+        db.createObjectStore(IDB_STORE, {keyPath: 'id'});
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onblocked = () => console.warn('IDB blocked');
+  });
+  return _idbPromise;
+}
+
+async function idbPut(record){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.oncomplete = () => resolve(record);
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore(IDB_STORE).put(record);
+  });
+}
+async function idbGet(id){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGetAll(){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbDelete(id){
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore(IDB_STORE).delete(id);
+  });
+}
+
+function genUploadId(){
+  return 'pic-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// recordId → setTimeout id（防止 retry 疊加）
+const _retryTimers = new Map();
+
+// 把 dataUrl 推進上傳 queue
+// 流程：先寫 IDB（永遠成功）→ 推 ImgBB（async）
+async function queueUpload(dataUrl, cardIdx, layer){
+  const id = genUploadId();
+  const record = {
+    id,
+    cardIdx,
+    layer, // 'bg' | 'av'
+    dataUrl,
+    projectId: getProjectId() || 'unsaved',
+    createdAt: Date.now(),
+    lastTriedAt: 0,
+    retryCount: 0,
+    status: 'pending', // pending | uploading | failed
+    errorMsg: ''
+  };
+  try {
+    await idbPut(record);
+  } catch(e){
+    console.error('IDB put failed', e);
+    toast('⚠️ 本機儲存失敗（IndexedDB 異常），但圖還在記憶體裡');
+  }
+  renderUploadStatus();
+  // 立刻嘗試上傳（不阻塞 caller）
+  tryUpload(id);
+  return id;
+}
+
+// 嘗試上傳一筆 record
+async function tryUpload(recordId){
+  // 取消既有 retry timer（避免疊加）
+  if(_retryTimers.has(recordId)){
+    clearTimeout(_retryTimers.get(recordId));
+    _retryTimers.delete(recordId);
+  }
+
+  let rec;
+  try { rec = await idbGet(recordId); } catch(e){ return; }
+  if(!rec) return;
+
+  const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
+  if(!apiKey){
+    rec.status = 'failed';
+    rec.errorMsg = '尚未填 ImgBB Key';
+    rec.lastTriedAt = Date.now();
+    await idbPut(rec);
+    renderUploadStatus();
+    return;
+  }
+
+  rec.status = 'uploading';
+  rec.lastTriedAt = Date.now();
+  await idbPut(rec);
+  renderUploadStatus();
+
+  try {
+    const url = await uploadToImgBB(rec.dataUrl, apiKey);
+    // ── 成功 ──
+    const card = G.cards[rec.cardIdx];
+    if(card){
+      if(rec.layer === 'bg'){
+        card.bgImgUrl = url;
+        card.bgImgData = '';
+      } else {
+        card.avatarUrl = url;
+        card.avatarData = '';
+      }
+    }
+    await idbDelete(recordId);
+    renderUploadStatus();
+    render();
+    autoSave();
+    console.log(`[upload] ✓ ${rec.layer} card ${rec.cardIdx+1} → ${url}`);
+  } catch(err){
+    console.warn(`[upload] ✗ ${rec.layer} card ${rec.cardIdx+1}`, err);
+    const newRec = {
+      ...rec,
+      retryCount: rec.retryCount + 1,
+      status: 'failed',
+      errorMsg: err.message || String(err),
+      lastTriedAt: Date.now()
+    };
+    await idbPut(newRec);
+    renderUploadStatus();
+
+    // Exponential backoff: 5 min → 30 min → 2 hr → 12 hr
+    const delays = [5*60*1000, 30*60*1000, 2*60*60*1000, 12*60*60*1000];
+    const delay = delays[Math.min(newRec.retryCount-1, delays.length-1)];
+    const tid = setTimeout(() => tryUpload(recordId), delay);
+    _retryTimers.set(recordId, tid);
+  }
+}
+
+// 開啟 app 時掃 IDB，自動重試所有 pending
+async function bootRetryQueue(){
+  try {
+    const all = await idbGetAll();
+    if(all.length === 0){ renderUploadStatus(); return; }
+    // 把所有 'uploading' 狀態 reset 成 'failed'（上次可能 crash 在中途）
+    for(const rec of all){
+      if(rec.status === 'uploading'){
+        rec.status = 'failed';
+        rec.errorMsg = '上次上傳中斷';
+        await idbPut(rec);
+      }
+    }
+    console.log(`[bootRetryQueue] 發現 ${all.length} 張未上傳的圖，自動重試中`);
+    if(all.length > 0) toast(`☁️ 自動補傳 ${all.length} 張圖...`);
+    for(const rec of all){
+      tryUpload(rec.id); // 並行（不 await）
+    }
+    renderUploadStatus();
+  } catch(e){
+    console.warn('bootRetryQueue failed', e);
+  }
+}
+
+// 手動「全部重試」（status bar 上的按鈕）
+// 一鍵診斷：dump 整個 app 狀態給開發者看
+async function runSystemDiagnosis(){
+  const report = {
+    _meta: {
+      timestamp: new Date().toISOString(),
+      ua: navigator.userAgent,
+      online: navigator.onLine,
+      url: location.href,
+      vendor: navigator.vendor,
+    },
+    apiKeys: {
+      imgbb_set: !!(document.getElementById('imgbb-key')?.value||'').trim(),
+      rmbg_set: !!(document.getElementById('rmbg-api-key')?.value||'').trim(),
+    },
+    project: {
+      sb_project_id: localStorage.getItem('sb_project_id') || null,
+      projectName: G.projectName,
+      cardCount: G.cards.length,
+      currentCardIdx: G.cur,
+    },
+    G_cards_summary: G.cards.map((c, i) => ({
+      idx: i,
+      title: (c.title||'').slice(0,30),
+      bgMode: c.bgMode,
+      bgImgUrl: c.bgImgUrl,
+      bgImgData_size_KB: c.bgImgData ? Math.round(c.bgImgData.length/1024) : 0,
+      avatarUrl: c.avatarUrl,
+      avatarData_size_KB: c.avatarData ? Math.round(c.avatarData.length/1024) : 0,
+      heroTitle: c.heroTitle,
+      buttons_count: c.buttons?.length || 0,
+    })),
+    localStorage: { keys: [], totalSize_KB: 0, projectStateSize_KB: 0, projectSummary: null, error: null },
+    indexedDB: { records: [], count: 0, error: null },
+  };
+
+  // localStorage
+  try {
+    let total = 0;
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      const v = localStorage.getItem(k) || '';
+      total += (k.length + v.length);
+      report.localStorage.keys.push({key: k, size_KB: Math.round(v.length/1024)});
+    }
+    report.localStorage.totalSize_KB = Math.round(total/1024);
+
+    const state = localStorage.getItem('line-card-project');
+    if(state){
+      report.localStorage.projectStateSize_KB = Math.round(state.length/1024);
+      try {
+        const parsed = JSON.parse(state);
+        report.localStorage.projectSummary = {
+          cardCount: parsed.cards?.length,
+          totalBase64Size_KB: Math.round((parsed.cards||[]).reduce((s,c)=>s+(c.bgImgData?.length||0)+(c.avatarData?.length||0), 0)/1024),
+          firstCardImg: parsed.cards?.[0] ? {
+            bgImgUrl: parsed.cards[0].bgImgUrl,
+            bgImgData_set: !!parsed.cards[0].bgImgData,
+            avatarUrl: parsed.cards[0].avatarUrl,
+            avatarData_set: !!parsed.cards[0].avatarData,
+          } : null,
+        };
+      } catch(e){ report.localStorage.projectParseError = e.message; }
+    }
+  } catch(e){ report.localStorage.error = e.message; }
+
+  // IndexedDB
+  try {
+    const all = await idbGetAll();
+    report.indexedDB.count = all.length;
+    report.indexedDB.records = all.map(r => ({
+      id: r.id,
+      cardIdx: r.cardIdx,
+      layer: r.layer,
+      status: r.status,
+      retryCount: r.retryCount,
+      errorMsg: r.errorMsg,
+      dataUrl_size_KB: r.dataUrl ? Math.round(r.dataUrl.length/1024) : 0,
+      createdAt: new Date(r.createdAt).toISOString(),
+      lastTriedAt: r.lastTriedAt ? new Date(r.lastTriedAt).toISOString() : null,
+    }));
+  } catch(e){ report.indexedDB.error = e.message; }
+
+  // 測 IDB 健康度（看寫入有沒有問題）
+  try {
+    const testRec = {id: '__healthcheck__', test: true, ts: Date.now()};
+    await idbPut(testRec);
+    const got = await idbGet('__healthcheck__');
+    await idbDelete('__healthcheck__');
+    report.indexedDB.healthCheck = got ? 'OK' : 'WRITE_OK_BUT_READ_FAILED';
+  } catch(e){ report.indexedDB.healthCheck = 'FAILED: ' + e.message; }
+
+  const json = JSON.stringify(report, null, 2);
+  console.log('=== SYSTEM DIAGNOSIS ===\n', json);
+
+  // 複製到剪貼簿
+  try {
+    await navigator.clipboard.writeText(json);
+    alert('🔍 診斷報告已複製到剪貼簿。\n\n直接貼給開發者就能診斷。\n\n（也可以打開 F12 → Console tab 看完整內容）');
+  } catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = json;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch{}
+    document.body.removeChild(ta);
+    alert('🔍 診斷報告已複製到剪貼簿。\n貼給開發者即可。');
+  }
+}
+
+async function manualRetryAll(){
+  try {
+    const all = await idbGetAll();
+    if(all.length === 0){ toast('沒有需要重試的圖'); return; }
+    toast(`☁️ 手動重試 ${all.length} 張...`);
+    for(const rec of all){
+      tryUpload(rec.id);
+    }
+  } catch(e){
+    toast('❌ 重試失敗：' + e.message);
+  }
+}
+
+// 等待所有 IDB 內 pending 上傳完（給 saveToCloud 用）
+async function waitForUploadsDone(maxWaitMs = 60000){
+  const start = Date.now();
+  while(true){
+    const all = await idbGetAll();
+    if(all.length === 0) return; // 全清空了
+    const stillRunning = all.filter(r => r.status === 'uploading' || r.status === 'pending').length;
+    if(stillRunning === 0){
+      // 都 failed 了 → 看是不是要中斷
+      const failed = all.filter(r => r.status === 'failed').length;
+      if(failed > 0) throw new Error(`${failed} 張圖上傳失敗（重試多次都不成功）`);
+      return;
+    }
+    if(Date.now() - start > maxWaitMs){
+      throw new Error(`等待上傳超過 ${maxWaitMs/1000} 秒`);
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+
+// 渲染上傳狀態 bar（在 sidebar 顯示）
+async function renderUploadStatus(){
+  const el = document.getElementById('upload-status-bar');
+  if(!el) return;
+  let all = [];
+  try { all = await idbGetAll(); } catch(e){ return; }
+  if(all.length === 0){
+    el.innerHTML = '<span style="color:#0a0;font-weight:600">✅ 所有圖都在雲端</span>';
+    return;
+  }
+  let pending = 0, uploading = 0, failed = 0;
+  all.forEach(r => {
+    if(r.status === 'uploading') uploading++;
+    else if(r.status === 'failed') failed++;
+    else pending++;
+  });
+  const parts = [];
+  if(uploading) parts.push(`<span style="color:#fa0">🟡 上傳中 ${uploading}</span>`);
+  if(pending) parts.push(`<span style="color:#999">⏳ 排隊 ${pending}</span>`);
+  if(failed) parts.push(`<span style="color:#f60">🟠 待重試 ${failed}</span>`);
+  el.innerHTML = parts.join(' · ') +
+    ` <button onclick="manualRetryAll()" style="margin-left:6px;padding:2px 8px;font-size:11px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">立即重試</button>`;
+}
+
+// 啟動時跑（DOM ready 後 1 秒，讓其他初始化先完成）
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', () => setTimeout(bootRetryQueue, 1000));
+} else {
+  setTimeout(bootRetryQueue, 1000);
+}
+
+// ══════════════════════════════════════════
 //  IMPORT / EXPORT
 // ══════════════════════════════════════════
 // ── 上傳 base64 到 ImgBB，回傳 https URL ──
@@ -1910,6 +2468,27 @@ async function uploadToImgBB(base64DataUrl, apiKey){
   const data = await res.json();
   if(!data.success) throw new Error('ImgBB 回應錯誤：'+JSON.stringify(data.error));
   return data.data.url; // https://i.ibb.co/xxxx/image.png
+}
+
+// ── 持久化 crop 結果：寫 G.cards + 推上傳 queue（IDB-backed，永不掉圖）──
+// 即使網路斷、ImgBB 掛、瀏覽器 crash，圖都已存在 IndexedDB，下次啟動會自動補傳
+async function persistCropResult(dataUrl, layer, isAvatar){
+  const cardIndex = G.cur;
+  const c = G.cards[cardIndex];
+  if(!c) return;
+  const dataKey = layer==='bg' ? 'bgImgData' : 'avatarData';
+  const urlKey  = layer==='bg' ? 'bgImgUrl'  : 'avatarUrl';
+
+  // 1. 先寫 base64 + placeholder URL，UI 立刻有圖
+  c[dataKey] = dataUrl;
+  c[urlKey]  = '[本地圖片]';
+  refreshLayerPreview(); render();
+
+  // 2. 推 IDB queue（永遠成功，即使沒網路）
+  // queueUpload 內部會自動 try ImgBB；失敗會留在 IDB，5min 後重試
+  const layerName = layer==='bg' ? '背景' : '大頭照';
+  toast(`☁️ ${layerName}已存本機，背景上傳中...`);
+  await queueUpload(dataUrl, cardIndex, layer);
 }
 
 function doCopy(){
@@ -2135,7 +2714,8 @@ async function openOrig(){
 
   } catch(err){
     console.error(err);
-    toast('❌ 失敗：'+err.message);
+    toast('');
+    alert('❌ 發布失敗：\n\n' + (err.message || err));
   }
 }
 
@@ -2252,10 +2832,80 @@ function showShareQR(shareUrl){
 }
 
 // ── 雲端存檔（包含 pendingMsg）──
+// 強制持久化：儲存到雲端前，所有 base64 必須先上 ImgBB
+// 流程：
+//   1. 把任何「漏網」的 base64（沒進 IDB queue 的）補推進 queue
+//   2. 等 IDB 內全部 pending 上傳完（waitForUploadsDone）
+//   3. 還有 failed → 拋錯擋下儲存
+async function ensureCardsImagesUploaded(){
+  const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
+  const isUploadedUrl = u => typeof u === 'string' && /^https?:\/\//i.test(u);
+
+  // 1. 掃 G.cards 看有沒有「base64 + 沒 URL」但**不在 IDB 內**的圖（防漏網之魚）
+  let idbAll = [];
+  try { idbAll = await idbGetAll(); } catch(e){}
+  const idbDataUrls = new Set(idbAll.map(r => r.dataUrl));
+
+  const orphans = [];
+  G.cards.forEach((c, idx) => {
+    if(c.bgImgData && !isUploadedUrl(c.bgImgUrl) && !idbDataUrls.has(c.bgImgData)){
+      orphans.push({cardIdx: idx, layer: 'bg', dataUrl: c.bgImgData});
+    }
+    if(c.avatarData && !isUploadedUrl(c.avatarUrl) && !idbDataUrls.has(c.avatarData)){
+      orphans.push({cardIdx: idx, layer: 'av', dataUrl: c.avatarData});
+    }
+  });
+
+  // 把漏網之魚補推進 queue
+  if(orphans.length > 0){
+    console.log(`[ensureCardsImagesUploaded] 補推 ${orphans.length} 張漏網圖到 queue`);
+    for(const o of orphans){
+      await queueUpload(o.dataUrl, o.cardIdx, o.layer);
+    }
+  }
+
+  // 2. 確認還有沒有未完成的（pending 或 uploading）
+  const all = await idbGetAll();
+  if(all.length === 0){
+    console.log('[ensureCardsImagesUploaded] 所有圖都已在雲端，放行');
+    return;
+  }
+
+  // 沒 Key → 擋下
+  if(!apiKey){
+    throw new Error(`有 ${all.length} 張圖還沒上傳到雲端。請先填「ImgBB Key」（左側欄最上面）`);
+  }
+
+  // 3. 所有 failed 的 → 主動 retry 一次
+  const failed = all.filter(r => r.status === 'failed');
+  if(failed.length > 0){
+    console.log(`[ensureCardsImagesUploaded] 主動 retry ${failed.length} 張 failed 的圖`);
+    for(const rec of failed){
+      tryUpload(rec.id); // 不 await
+    }
+  }
+
+  // 4. 等待全部上傳完（最多 60 秒）
+  toast(`☁️ 等待 ${all.length} 張圖上傳完成...`);
+  await waitForUploadsDone(60000);
+  toast(`✓ 所有圖已上雲端`);
+}
+
 async function saveToCloud(name){
+  // 關卡：強制把所有 base64 先上 ImgBB（拒絕儲存爛資料到雲端）
+  await ensureCardsImagesUploaded();
+
   const state = getProjectState();
   if(window._pendingMsg) state.pendingMsg = window._pendingMsg;
   const data = JSON.stringify(state);
+
+  // 警示：如果 state 還是太大，可能是 base64 漏網之魚
+  const sizeMB = (data.length / 1024 / 1024).toFixed(2);
+  console.log(`[saveToCloud] state size: ${sizeMB}MB`);
+  if(data.length > 4 * 1024 * 1024){
+    throw new Error(`雲端資料過大（${sizeMB}MB），可能有 base64 沒清乾淨。請告訴開發者。`);
+  }
+
   const sb = getSB();
   const projectId = getProjectId();
   if(projectId){
@@ -2286,8 +2936,10 @@ async function doCloudSave(){
     toast('✅ 已儲存到雲端！');
     console.log('saved project id:', id);
   } catch(e){
-    toast('❌ 儲存失敗：' + e.message);
-    console.error(e);
+    toast(''); // 清掉前面的 loading toast
+    console.error('saveToCloud failed', e);
+    // 用 alert 確保訊息完整顯示（toast 會 2.8 秒消失）
+    alert('❌ 儲存失敗：\n\n' + (e.message || e));
   }
 }
 
@@ -2666,6 +3318,15 @@ function applyProjectState(state){
   G.customColors = state.customColors || ['#ffffff','#ffffff','#ffffff'];
   G.cur = state.cur || 0;
   G.cards = state.cards;
+  // 相容舊版專案：補上新字段預設值
+  G.cards.forEach(c => {
+    if(c.bgMode === undefined) c.bgMode = 'image';
+    if(c.bgSolidColor === undefined) c.bgSolidColor = '#0d0d0d';
+    if(c.heroTitle === undefined) c.heroTitle = '';
+    if(c.heroTitleColor === undefined) c.heroTitleColor = '#ffffff';
+    if(c.heroTitleSize === undefined) c.heroTitleSize = 'md';
+    if(c.heroTitlePos === undefined) c.heroTitlePos = 'center';
+  });
   // 還原 API Keys
   if(state.apiKeys){
     const imgbbEl = document.getElementById('imgbb-key');
@@ -2679,24 +3340,52 @@ function applyProjectState(state){
 
 // ── 存到 localStorage（自動 + 手動）──
 function getLightState(){
-  // 只存設定，不存圖片 base64（圖片太大會超過 localStorage 5MB 限制）
+  // localStorage 永遠不存 base64！
+  // 為什麼：localStorage.setItem 是「同步阻塞」API，寫入幾 MB 字串會卡死 main thread 1 秒以上
+  // → autoSave 每秒一次 → 每秒卡 1 秒 → 瀏覽器完全動不了
+  //
+  // 圖已經被三層防護 cover：
+  //   1. G.cards 記憶體（render 用）
+  //   2. IndexedDB pending_uploads（即使 crash 也在）
+  //   3. ImgBB 雲端（上傳成功後）
+  // localStorage 只負責「設定」（標題、顏色、按鈕、URL 字串）→ < 100KB → 寫入 < 5ms
   const state = getProjectState();
   state.cards = state.cards.map(c => {
     const light = Object.assign({}, c);
-    // 清掉 base64，只保留 URL
-    if(light.bgImgData) { light.bgImgData = ''; }
-    if(light.avatarData) { light.avatarData = ''; }
+    light.bgImgData = '';     // 永遠清，不留 base64
+    light.avatarData = '';
     return light;
   });
   return state;
 }
+
+// debounce：停止編輯 600ms 後才執行 autoSave，避免狂觸發
+let _autoSaveTimer = null;
 function autoSave(){
+  if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(_autoSaveImpl, 600);
+}
+function _autoSaveImpl(){
   try {
-    localStorage.setItem(PROJECT_KEY, JSON.stringify(getLightState()));
+    const payload = JSON.stringify(getLightState());
+    // 額外保險：超過 500KB 直接擋，這代表 light state 還是太大（不應該）
+    if(payload.length > 500 * 1024){
+      console.warn(`[autoSave] light state ${(payload.length/1024).toFixed(0)}KB，超過閾值，跳過寫入`);
+      return;
+    }
+    localStorage.setItem(PROJECT_KEY, payload);
   } catch(e) {
+    // QuotaExceededError 已不該發生（light state < 100KB）
     console.warn('autoSave failed', e);
   }
 }
+// 強制同步存（離開頁面前用）
+function autoSaveSync(){
+  if(_autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+  _autoSaveImpl();
+}
+// 離開頁面前強制存一次
+window.addEventListener('beforeunload', autoSaveSync);
 
 // ── 手動存檔：localStorage + 下載 .json 檔 ──
 function doSaveProject(){
@@ -2957,9 +3646,8 @@ async function doRemoveBg(e){
       reader.onload = ev => res(ev.target.result);
       reader.readAsDataURL(resultBlob);
     });
-    G.cards[G.cur].avatarData = dataUrl;
-    G.cards[G.cur].avatarUrl = '[去背圖片]';
-    renderFields(); render();
+    // 去背完的圖也走 persist：上傳 ImgBB 拿到永久 URL
+    persistCropResult(dataUrl, 'av');
     toast('✅ 去背完成！');
   } catch (err) {
     console.error('去背失敗', err);
