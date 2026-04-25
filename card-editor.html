@@ -8,21 +8,22 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* THE TAG 攝影工作室風 — dark + 橘色 accent */
-  --bg:#0d0d0d;
-  --bg-elev-1:#161616;
-  --bg-elev-2:#1f1f1f;
-  --bg-elev-3:#262626;
-  --white:#161616;       /* 沿用變數名，語意變成「內層卡片背景」 */
+  /* 70% 灰底 + 螢光綠 accent */
+  --bg:#2a2a2a;            /* 70% 灰 — 主底色，不是純黑 */
+  --bg-elev-1:#353535;     /* sidebar / 卡片背景（亮一階）*/
+  --bg-elev-2:#424242;     /* input / hover 狀態（亮兩階）*/
+  --bg-elev-3:#525252;     /* selected / active hover（亮三階）*/
+  --white:#353535;         /* 沿用變數名，現在語意是「內層卡片」*/
   --border:rgba(255,255,255,.08);
   --border-strong:rgba(255,255,255,.16);
-  --green:#e8791e;       /* 沿用變數名，整站從 LINE 綠改成 THE TAG 橘 */
-  --green-dk:#d96b14;
-  --green-lt:rgba(232,121,30,.14);
+  --green:#39FF14;         /* 螢光綠 accent — 沿用變數名讓全站自動切換 */
+  --green-dk:#1ee400;      /* hover 時更亮 */
+  --green-lt:rgba(57,255,20,.14);
+  --green-glow:0 0 12px rgba(57,255,20,.35);
   --text:#f5f5f5;
-  --text2:#b3b3b3;
-  --text3:#6b6b6b;
-  --red:#ef4444;
+  --text2:#c2c2c2;
+  --text3:#8a8a8a;
+  --red:#ff5252;
   --yellow:rgba(234,179,8,.14);
   --r:12px;
   --mono:'SF Mono','Menlo','Monaco','Consolas',monospace;
@@ -35,8 +36,8 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;back
 .topbar-brand-icon{font-size:20px;color:var(--green)}
 .topbar-btns{display:flex;gap:8px}
 .tbtn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;letter-spacing:.02em}
-.tbtn-white{background:var(--green);color:#fff}
-.tbtn-white:hover{background:var(--green-dk);transform:translateY(-1px)}
+.tbtn-white{background:var(--green);color:#0d0d0d;font-weight:800;box-shadow:var(--green-glow)}
+.tbtn-white:hover{background:var(--green-dk);transform:translateY(-1px);box-shadow:0 0 16px rgba(57,255,20,.5)}
 .tbtn-outline{background:transparent;color:var(--text2);border:1px solid var(--border-strong)}
 .tbtn-outline:hover{background:var(--bg-elev-2);color:var(--text);border-color:var(--text3)}
 
@@ -48,9 +49,9 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;back
 .card-order-bar{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .card-pill{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .card-pill:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.card-pill.active{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 4px 12px rgba(232,121,30,.3)}
+.card-pill.active{background:var(--green);border-color:var(--green);color:#0d0d0d;font-weight:800;box-shadow:var(--green-glow)}
 .card-pill-add{border-color:rgba(255,255,255,.16);color:var(--text3)}
-.card-pill-add:hover{border-color:var(--green);color:var(--green);background:rgba(232,121,30,.06)}
+.card-pill-add:hover{border-color:var(--green);color:var(--green);background:rgba(57,255,20,.06)}
 
 .icon-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .icon-btn:hover{background:var(--bg-elev-3);border-color:var(--text3);color:var(--text)}
@@ -61,12 +62,12 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;back
 .fhint{color:var(--text3)}
 .finput{background:var(--bg-elev-2);color:var(--text);border-color:var(--border);transition:all .15s}
 .finput::placeholder{color:var(--text3)}
-.finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(232,121,30,.15);background:var(--bg-elev-3)}
+.finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(57,255,20,.15);background:var(--bg-elev-3)}
 textarea.finput{font-family:inherit}
 
 /* upload area */
 .upload-area{background:var(--bg-elev-2);border-color:var(--border-strong);border-style:dashed}
-.upload-area:hover,.upload-area.drag{background:rgba(232,121,30,.06);border-color:var(--green)}
+.upload-area:hover,.upload-area.drag{background:rgba(57,255,20,.06);border-color:var(--green)}
 .upload-text{color:var(--text)}
 .upload-hint{color:var(--text3)}
 .upload-clear{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:var(--red)}
@@ -81,7 +82,7 @@ textarea.finput{font-family:inherit}
 /* size / ratio picker */
 .size-btn,.ratio-btn{background:var(--bg-elev-2);border-color:var(--border);color:var(--text2)}
 .size-btn:hover,.ratio-btn:hover{background:var(--bg-elev-3);border-color:var(--green);color:var(--green)}
-.size-btn.on,.ratio-btn.on{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 4px 12px rgba(232,121,30,.3)}
+.size-btn.on,.ratio-btn.on{background:var(--green);border-color:var(--green);color:#0d0d0d;font-weight:800;box-shadow:var(--green-glow)}
 .ratio-btn .rb-shape{border-color:currentColor}
 
 /* publish bar (inline style override) */
