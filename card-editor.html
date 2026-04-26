@@ -3950,9 +3950,33 @@ async function renameProject(id, oldName){
 }
 
 function newProject(){
-  if(!confirm('新建專案會清空目前編輯內容，確定嗎？')) return;
+  // 1. 先問名字（不問就建立會卡住命名流程）
+  const name = prompt('新專案名稱：', '未命名名片');
+  if(name === null) return;            // 用戶按取消
+  const trimmed = (name || '').trim();
+  if(!trimmed){ alert('名稱不能空白'); return; }
+
+  // 2. 建空白 state（不會動到 Supabase 上的舊專案，舊的繼續存在）
+  const blankState = {
+    projectName: trimmed,
+    altText:'請在手機上查看數位版名片。',
+    ratio:'20:13',
+    customColors:['#ffffff','#ffffff','#111111','#555555','#00b900','#ffffff'],
+    favoriteColors:['#ffffff','#000000','#00b900'],
+    btnWidth:'full',
+    titleSize:'md',
+    descSize:'sm',
+    btnSize:'md',
+    cards:[newCard()],
+    cur:0
+  };
+
+  // 3. 清掉當前 sb_project_id（讓 autoSave 第一次走 insert 建新 row）
+  //    寫入新 state 給 reload 後 boot 載入
   localStorage.removeItem('sb_project_id');
-  localStorage.removeItem('line-card-project');
+  localStorage.setItem('line-card-project', JSON.stringify(blankState));
+
+  // 4. reload 進入新專案編輯頁
   document.getElementById('projects-overlay')?.remove();
   location.reload();
 }
