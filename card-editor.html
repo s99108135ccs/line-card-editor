@@ -1616,7 +1616,8 @@ function renderFields(){
           ${(c.avatarRotate||0)!==0?`<button onclick="resetAvatarRotate()" style="flex:1;padding:6px;font-size:11px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 歸零</button>`:''}
         </div>
       </div>
-      <div class="fhint" style="margin-top:6px">大頭照會疊在背景圖的左下角（預設），可調整位置、大小與旋轉。</div>
+      <button onclick="resetAvatarPosition()" style="width:100%;margin-top:8px;padding:8px;font-size:12px;font-weight:600;border:1.5px dashed #ff8a3d;background:#fff5ec;color:#ff8a3d;border-radius:6px;cursor:pointer;font-family:inherit">↻ 位置/大小歸零（救援）</button>
+      <div class="fhint" style="margin-top:6px">大頭照會疊在背景圖的左下角（預設），可調整位置、大小與旋轉。如果拖太遠看不到，按上方橘色救援按鈕。</div>
     </div>
 
     <div class="field">
@@ -2036,6 +2037,16 @@ function bumpAvatarRotate(delta){
 function resetAvatarRotate(){
   G.cards[G.cur].avatarRotate = 0;
   renderFields(); render();
+}
+// avatar：位置/大小/旋轉 全部歸零（救援用：拖太遠看不到時呼叫）
+function resetAvatarPosition(){
+  const c = G.cards[G.cur];
+  c.avatarX = null;
+  c.avatarY = null;
+  c.avatarScale = 1.0;
+  c.avatarRotate = 0;
+  renderFields(); render();
+  toast('✓ Avatar 已歸零');
 }
 function setHeroTitleSize(v,el){
   G.cards[G.cur].heroTitleSize=v;
@@ -4477,11 +4488,32 @@ function doImport(){
     const pt=e.touches?e.touches[0]:e;
 
     if(dragging){
-      const dx=pt.clientX-startMX, dy=pt.clientY-startMY;
-      G.cards[dragging.ci].avatarX=startAX+dx;
-      G.cards[dragging.ci].avatarY=startAY+dy;
-      const avX=G.cards[dragging.ci].avatarX;
-      const avY=G.cards[dragging.ci].avatarY;
+      let dx=pt.clientX-startMX, dy=pt.clientY-startMY;
+      let nextAvX=startAX+dx, nextAvY=startAY+dy;
+
+      // ── Clamp：避免 avatar 拖出 hero 邊界（overflow:hidden 會讓 avatar 消失抓不回來）──
+      // 規則：avatar 至少要保留 50% 在 hero 內 → 還能做「半個頭露邊」設計，又永遠抓得到
+      const wrap=dragging.el;
+      const hero=wrap.parentElement;          // .fcard-hero
+      if(hero){
+        const heroR=hero.getBoundingClientRect();
+        const wrapR=wrap.getBoundingClientRect();
+        // wrap 沒套 translate 時的 viewport 位置（反推 startAX/AY）
+        const baseL=wrapR.left-startAX;
+        const baseT=wrapR.top-startAY;
+        // 50% 必須在 hero 內 → 中心點在 hero 內
+        const halfW=wrapR.width*0.5, halfH=wrapR.height*0.5;
+        const minX=heroR.left-baseL-halfW;
+        const maxX=heroR.right-baseL-halfW;
+        const minY=heroR.top-baseT-halfH;
+        const maxY=heroR.bottom-baseT-halfH;
+        nextAvX=Math.max(minX, Math.min(maxX, nextAvX));
+        nextAvY=Math.max(minY, Math.min(maxY, nextAvY));
+      }
+
+      G.cards[dragging.ci].avatarX=nextAvX;
+      G.cards[dragging.ci].avatarY=nextAvY;
+      const avX=nextAvX, avY=nextAvY;
       // 保留 translateX(-50%) 等基礎 transform
       const curT=dragging.el.style.transform||'';
       const base=curT.replace(/translate\([^)]*\)/g,'').trim();
