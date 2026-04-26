@@ -3902,6 +3902,8 @@ async function loadProject(id){
     const state = JSON.parse(row.data);
     localStorage.setItem('sb_project_id', id);
     localStorage.setItem('line-card-project', JSON.stringify(state));
+    // 鎖死 autoSave 避免 beforeunload 用「即將被換掉的舊 G」蓋掉我們剛寫的 state
+    _suppressAutoSave = true;
     location.reload();
   } catch(e){
     toast('❌ 載入失敗：' + e.message);
@@ -3976,7 +3978,10 @@ function newProject(){
   localStorage.removeItem('sb_project_id');
   localStorage.setItem('line-card-project', JSON.stringify(blankState));
 
-  // 4. reload 進入新專案編輯頁
+  // 4. 鎖死 autoSave（避免 beforeunload listener 用舊 G 覆蓋我們剛寫的 blankState）
+  _suppressAutoSave = true;
+
+  // 5. reload 進入新專案編輯頁
   document.getElementById('projects-overlay')?.remove();
   location.reload();
 }
@@ -4312,11 +4317,14 @@ function getLightState(){
 
 // debounce：停止編輯 600ms 後才執行 autoSave，避免狂觸發
 let _autoSaveTimer = null;
+let _suppressAutoSave = false;  // 切換專案/reload 前 set 為 true，避免 beforeunload 覆蓋新 state
 function autoSave(){
+  if(_suppressAutoSave) return;
   if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(_autoSaveImpl, 600);
 }
 function _autoSaveImpl(){
+  if(_suppressAutoSave) return;
   try {
     const payload = JSON.stringify(getLightState());
     // 額外保險：超過 500KB 直接擋，這代表 light state 還是太大（不應該）
@@ -4332,6 +4340,7 @@ function _autoSaveImpl(){
 }
 // 強制同步存（離開頁面前用）
 function autoSaveSync(){
+  if(_suppressAutoSave) return;
   if(_autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
   _autoSaveImpl();
 }
