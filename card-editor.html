@@ -4018,6 +4018,64 @@ function newProject(){
 const GOOGLE_CLIENT_ID = '509856385308-e75vgh97mie37gs725unque8bhoekflg.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_PREFIX = 'card-backup-';
+const DRIVE_BACKUP_FOLDER_NAME = 'LINE名片備份';
+let _driveBackupFolderId = null; // session 內 cache
+
+// 取得或建立「LINE名片備份」資料夾，回傳 folderId
+async function getOrCreateBackupFolder(token){
+  if(_driveBackupFolderId) return _driveBackupFolderId;
+  // 先找看看
+  const q = encodeURIComponent(
+    `name='${DRIVE_BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false and 'root' in parents`
+  );
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if(!r.ok) throw new Error('找資料夾失敗 HTTP ' + r.status);
+  const data = await r.json();
+  if(data.files && data.files.length > 0){
+    _driveBackupFolderId = data.files[0].id;
+    return _driveBackupFolderId;
+  }
+  // 沒找到 → 建立
+  const r2 = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: DRIVE_BACKUP_FOLDER_NAME,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: ['root']
+    })
+  });
+  if(!r2.ok) throw new Error('建立資料夾失敗 HTTP ' + r2.status);
+  const result = await r2.json();
+  _driveBackupFolderId = result.id;
+  return _driveBackupFolderId;
+}
+
+// 把根目錄遺留的 card-backup-* 自動搬進「LINE名片備份」資料夾
+async function migrateOldBackupsToFolder(token, folderId){
+  const q = encodeURIComponent(
+    `name contains '${DRIVE_FILE_PREFIX}' and mimeType='application/json' and trashed=false and 'root' in parents`
+  );
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if(!r.ok) return 0;
+  const data = await r.json();
+  if(!data.files || data.files.length === 0) return 0;
+  // patch 每個檔案：加 folderId 為 parent，移除 root
+  await Promise.all(data.files.map(f =>
+    fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?addParents=${folderId}&removeParents=root`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  ));
+  return data.files.length;
+}
 
 // Token cache：1 個 session 內所有 Drive 操作共用，避免重複登入
 let _driveAccessToken = null;
@@ -4109,6 +4167,11 @@ async function syncToDrive(){
   try {
     toast('⏳ 開啟 Google 授權...');
     const token = await getDriveToken();
+    toast('⏳ 準備備份資料夾...');
+    const folderId = await getOrCreateBackupFolder(token);
+    // 順手把根目錄舊備份搬進來（一次性遷移，沒有就 noop）
+    const migrated = await migrateOldBackupsToFolder(token, folderId);
+    if(migrated > 0) console.log(`[Drive] 已自動搬移 ${migrated} 個舊備份進「${DRIVE_BACKUP_FOLDER_NAME}」資料夾`);
     toast('⏳ 上傳到 Drive...');
     const state = getProjectState();
     const data = JSON.stringify({ version: 2, backupAt: new Date().toISOString(), state }, null, 2);
@@ -4116,7 +4179,7 @@ async function syncToDrive(){
     const projectName = state.projectName || '未命名';
     const safeName = projectName.replace(/[^\w一-龥\-]/g,'_').slice(0,30);
     const name = `${DRIVE_FILE_PREFIX}${safeName}-${date}.json`;
-    const metadata = { name, mimeType: 'application/json' };
+    const metadata = { name, mimeType: 'application/json', parents: [folderId] };
     const fd = new FormData();
     fd.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     fd.append('file', new Blob([data], { type: 'application/json' }));
@@ -4140,7 +4203,13 @@ async function listDriveBackups(){
   try {
     toast('⏳ 取得備份列表...');
     const token = await getDriveToken();
-    const q = encodeURIComponent(`name contains '${DRIVE_FILE_PREFIX}' and mimeType='application/json' and trashed=false`);
+    const folderId = await getOrCreateBackupFolder(token);
+    // 順手把根目錄遺留的舊備份搬進來
+    const migrated = await migrateOldBackupsToFolder(token, folderId);
+    if(migrated > 0) toast(`✓ 已搬 ${migrated} 個舊備份進資料夾`);
+    const q = encodeURIComponent(
+      `name contains '${DRIVE_FILE_PREFIX}' and mimeType='application/json' and trashed=false and '${folderId}' in parents`
+    );
     const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50`, {
       headers: { Authorization: `Bearer ${token}` }
     });
