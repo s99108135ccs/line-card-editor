@@ -2573,7 +2573,7 @@ function render(){
         <div class="av-sz-handle" data-card="${i}"
           style="position:absolute;bottom:-7px;right:-7px;width:16px;height:16px;background:#00b900;border:2.5px solid #fff;border-radius:50%;cursor:se-resize;z-index:5;touch-action:none"></div>
       </div>
-      <div class="av-drag-hint">拖移調整位置 · 右下角或滾輪縮放</div>
+      <div class="av-drag-hint">拖移調整位置 · 右下角綠點縮放</div>
     `:'';
     // 背景模式：純色 or 圖片
     const isColorMode = c.bgMode === 'color';
@@ -4522,22 +4522,9 @@ function doImport(){
   document.addEventListener('mouseup', endDrag);
   document.addEventListener('touchend', endDrag);
 
-  // ── 滾輪縮放 ──
-  document.addEventListener('wheel', function(e){
-    const w=e.target.closest('.av-wrap');
-    if(!w) return;
-    e.preventDefault();
-    const ci=parseInt(w.dataset.card);
-    if(isNaN(ci)) return;
-    const avPxMap={sm:38,md:52,lg:68};
-    const bp=avPxMap[(G.cards[ci].avatarSize||'md')]||52;
-    const sc=G.cards[ci].avatarScale||1;
-    const ns=Math.max(0.2, Math.min(8, sc+(e.deltaY<0?0.08:-0.08)));
-    G.cards[ci].avatarScale=ns;
-    const px=Math.round(bp*ns);
-    w.style.width=px+'px';
-    w.style.height=px+'px';
-  },{passive:false});
+  // ── 滾輪縮放（已停用 2026-04-26）──
+  // 移除原因：滑過 avatar + 滾頁面會誤觸，造成 avatar 尺寸莫名其妙變動
+  // 縮放改用「右下角綠點 handle 拖曳」（在 av-sz-handle）
 
 })();
 
