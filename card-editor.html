@@ -1030,8 +1030,13 @@ function setCustomColor(idx, hex){
   // 同步套用到全部卡片
   // 0:背景色（合併 footerBg + bgColor 同色）/ 2:標題文字 / 3:說明文字 / 4:按鈕色 / 5:按鈕文字色
   if(idx === 0){
-    // 合併版：footer 跟 body 都套同色，視覺上整張卡是同一個底色
-    G.cards.forEach(c => { c.footerBg = hex; c.bgColor = hex; });
+    // 合併版：整張卡（hero + body + footer）都套同色
+    // bgSolidColor 給純色模式 hero 用、bgColor 給 body 用、footerBg 給按鈕區用
+    G.cards.forEach(c => {
+      c.footerBg = hex;
+      c.bgColor = hex;
+      c.bgSolidColor = hex;
+    });
     G.customColors[1] = hex; // 同步 array slot 1（避免不一致）
   } else if(idx === 1){
     // 保留舊邏輯（雖然 UI 不顯示，但若舊資料 / 外部寫進來還是有效）
@@ -2258,8 +2263,12 @@ function render(){
       ? `${bgEl}${heroTitleEl}${avatarEl}`
       : `<div class="fcard-hero-empty"><div>🖼️</div><span>圖片位置</span></div>`;
 
+    // hero 背景：純色模式 transparent（內部 bgEl 顯示 bgSolidColor）；有圖 transparent（讓 image 顯示）；沒圖用 bgColor
+    const heroBgPaint = isColorMode
+      ? 'transparent'
+      : (bgSrc ? 'transparent' : (c.bgColor || '#ffffff'));
     div.innerHTML=`
-      <div class="fcard-hero" style="padding-top:${hp};background:${isColorMode?'transparent':c.bgColor+'22'};position:relative;overflow:visible">${heroContent}</div>
+      <div class="fcard-hero" style="padding-top:${hp};background:${heroBgPaint};position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
         ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor};text-align:${c.titleAlign||'left'};font-family:${heroFontStack(c.titleFont)}">${esc(c.title)}</div>`
           :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic;text-align:${c.titleAlign||'left'}">標題...</div>`}
