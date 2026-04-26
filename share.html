@@ -691,11 +691,11 @@ function renderCards(state) {
   const c0 = cards[0];
   const firstTitle = c0?.title || state.projectName || '數位名片';
   const firstDesc = c0?.desc || state.altText || 'THE TAG 數位名片';
-  const firstImg = getHero(0, c0);
+  const firstImg = getHero(0, c0).url;  // getHero 現在回 object，取 .url
   document.title = firstTitle + ' · 數位名片';
   document.querySelector('meta[property="og:title"]').content = firstTitle;
   document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
-  if (firstImg && firstImg.startsWith('http')) {
+  if (firstImg && typeof firstImg === 'string' && firstImg.startsWith('http')) {
     document.querySelector('meta[property="og:image"]').content = firstImg;
   }
 }
