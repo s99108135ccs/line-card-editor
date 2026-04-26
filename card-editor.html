@@ -3004,20 +3004,28 @@ function showPublishResult(projectId, pendingMsg){
   // 點輸入框自動選取
   overlay.querySelector('#pr-url').onclick = (e) => e.target.select();
 
-  // 直接傳到 LINE 好友：依環境用不同 share URL
-  // - 手機（iOS/Android）：line.me/R/msg → 開 LINE App 選好友（含名片標題 + URL）
-  // - 桌面（Mac/Win）：social-plugins.line.me/lineit/share → 開 LINE 網頁分享（只 URL，但桌面唯一可靠路徑）
-  // 之前用 line.me/R/share 在桌面會 redirect 到 line.me/tw 官網（無 LINE App handler）
-  overlay.querySelector('#pr-line-share').onclick = () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    let shareUrl;
-    if(isMobile){
-      const text = `${G.projectName || '我的數位名片'}\n${publicUrl}`;
-      shareUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
-    } else {
-      shareUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(publicUrl);
+  // 傳到 LINE 好友（hybrid 策略，100% 有 fallback）：
+  // 1. 永遠先複製 URL（保底，即使 LINE 沒開起來，user 自己貼上即可）
+  // 2. 嘗試打開 LINE deep link（line.me/R/msg/text/?{URL} — 舊版實證 work）
+  //    手機/桌面有 LINE App → 直接開 LINE / 沒 → 跳官網（但 URL 已在剪貼簿）
+  // 3. 按鈕視覺切換成「✓ 已複製，打開 LINE → 貼上送」提示下一步
+  overlay.querySelector('#pr-line-share').onclick = async () => {
+    // Step 1: 強制複製
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+    } catch(e) {
+      const inp = overlay.querySelector('#pr-url');
+      if(inp){ inp.select(); document.execCommand('copy'); }
     }
-    window.open(shareUrl, '_blank', 'width=600,height=700');
+    // Step 2: 嘗試開 LINE
+    const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(publicUrl);
+    window.open(lineUrl, '_blank');
+    // Step 3: 按鈕視覺確認
+    const btn = overlay.querySelector('#pr-line-share');
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<span style="font-size:18px">✓</span><span>已複製！打開 LINE 對話 → Cmd+V 貼上送出</span>';
+    btn.style.background = '#00a06c';
+    setTimeout(() => { btn.innerHTML = origHtml; btn.style.background = '#06c755'; }, 5000);
   };
 
   document.body.appendChild(overlay);
