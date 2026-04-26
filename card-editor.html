@@ -2184,8 +2184,8 @@ function composeHero(c){
         if(c.avatarPos==='right') baseX=W-avW-margin;
         else if(c.avatarPos==='center') baseX=(W-avW)/2;
         else baseX=margin;
-        // 套上拖移偏移（預覽卡是210px，輸出是W px，縮放比例）
-        const previewW=210;
+        // 套上拖移偏移（預覽卡 .fcard 是 300px，輸出是 W px，縮放比例）
+        const previewW=300;
         const scaleRatio=W/previewW;
         const x=baseX+(c.avatarX||0)*scaleRatio;
         const y=baseY+(c.avatarY||0)*scaleRatio;
@@ -2229,8 +2229,8 @@ function composeHero(c){
       ctx.textBaseline = 'middle';
       // 套用 user 選擇的字體
       ctx.font = `800 ${fontSize}px ${heroFontStack(c.heroTitleFont)}`;
-      // 拖曳偏移（preview 210px → 輸出 W px，等比放大）
-      const previewW = 210;
+      // 拖曳偏移（preview .fcard 300px → 輸出 W px，等比放大）
+      const previewW = 300;
       const scaleRatio = W / previewW;
       const cx = W/2 + (c.heroTitleX || 0) * scaleRatio;
       const cy = H/2 + (c.heroTitleY || 0) * scaleRatio;
