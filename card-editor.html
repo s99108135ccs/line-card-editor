@@ -1027,11 +1027,14 @@ function setCustomColor(idx, hex){
   const picker = document.getElementById('custom-color-'+idx);
   if(picker && picker.value !== hex) picker.value = hex;
 
-  // 同步套用到全部卡片：6 個 slot 對應到 6 個 LINE Flex 欄位
-  // 0:背景色 (footerBg) / 1:標題背景色 (bgColor) / 2:標題文字 / 3:說明文字 / 4:按鈕色 / 5:按鈕文字色
+  // 同步套用到全部卡片
+  // 0:背景色（合併 footerBg + bgColor 同色）/ 2:標題文字 / 3:說明文字 / 4:按鈕色 / 5:按鈕文字色
   if(idx === 0){
-    G.cards.forEach(c => { c.footerBg = hex; });
+    // 合併版：footer 跟 body 都套同色，視覺上整張卡是同一個底色
+    G.cards.forEach(c => { c.footerBg = hex; c.bgColor = hex; });
+    G.customColors[1] = hex; // 同步 array slot 1（避免不一致）
   } else if(idx === 1){
+    // 保留舊邏輯（雖然 UI 不顯示，但若舊資料 / 外部寫進來還是有效）
     G.cards.forEach(c => { c.bgColor = hex; });
   } else if(idx === 2){
     G.cards.forEach(c => { c.titleColor = hex; });
@@ -1096,10 +1099,10 @@ function syncFavoriteDotsUI(){
   }
 }
 
-// 動態 render 整體配色 6 個 slot（每個 slot 含 color picker + hex input + 3 個 favorite dot）
+// 動態 render 整體配色 slot（每個 slot 含 color picker + hex input + 3 個 favorite dot）
+// 注意 idx 不連續（跳過 1），idx=0「背景色」同時 set footerBg + bgColor（合併版）
 const BRAND_COLOR_SLOTS = [
-  {idx:0, name:'背景色',     hint:'整張卡片底色（含按鈕後面）'},
-  {idx:1, name:'標題背景色', hint:'標題 + 說明文字後面'},
+  {idx:0, name:'背景色',     hint:'整張卡片底色（標題 + 按鈕後面都套用）'},
   {idx:2, name:'標題文字色', hint:'所有卡片標題的文字顏色'},
   {idx:3, name:'說明文字色', hint:'所有卡片說明文字的顏色'},
   {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色'},
