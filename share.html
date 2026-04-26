@@ -486,11 +486,14 @@ function getAvatarStyle(c) {
   let shape = c.avatarShape || 'circle';
   if (shape !== 'circle' && shape !== 'rounded' && shape !== 'square') shape = 'square';
 
-  const flipX = c.avatarFlipX ? 'transform: scaleX(-1);' : '';
+  const transforms = [];
+  if(c.avatarFlipX) transforms.push('scaleX(-1)');
+  if(c.avatarRotate) transforms.push(`rotate(${c.avatarRotate}deg)`);
+  const imgTransform = transforms.length ? `transform: ${transforms.join(' ')};` : '';
 
   return {
     wrapStyle: `${pos} width: ${w}px; height: ${h}px;`,
-    imgStyle: flipX,
+    imgStyle: imgTransform,
     shapeClass: 'shape-' + shape
   };
 }
@@ -557,9 +560,11 @@ function renderCards(state) {
     const htX = (c.heroTitleX || 0) * offsetScale;
     const htY = (c.heroTitleY || 0) * offsetScale;
     const heroFont = HERO_FONTS[c.heroTitleFont] || HERO_FONTS.sans;
+    const htScale = c.heroTitleScale || 1.0;
+    const htRotate = c.heroTitleRotate || 0;
     const heroTitleHtml = c.heroTitle ? `
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlignMap[c.heroTitlePos||'center']};padding:0 5%;z-index:3;pointer-events:none;transform:translate(${htX}px,${htY}px)">
-        <div style="font-size:clamp(20px,${heroTitleSizeMap[c.heroTitleSize||'md']},48px);color:${esc(c.heroTitleColor||'#fff')};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${esc(c.heroTitlePos||'center')};text-shadow:0 2px 10px rgba(0,0,0,.4);max-width:100%;word-break:break-word;font-family:${heroFont}">${esc(c.heroTitle)}</div>
+        <div style="font-size:clamp(20px,${heroTitleSizeMap[c.heroTitleSize||'md']},48px);color:${esc(c.heroTitleColor||'#fff')};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${esc(c.heroTitlePos||'center')};text-shadow:0 2px 10px rgba(0,0,0,.4);max-width:100%;word-break:break-word;font-family:${heroFont};transform:rotate(${htRotate}deg) scale(${htScale});transform-origin:center">${esc(c.heroTitle)}</div>
       </div>
     ` : '';
 

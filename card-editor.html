@@ -999,6 +999,8 @@ function newCard(){
     heroTitleFont: 'sans',  // sans / serif / kai / brush / mono / display
     heroTitleX: 0,          // 拖曳偏移 X（以 preview 卡片寬度為基準的 px）
     heroTitleY: 0,          // 拖曳偏移 Y
+    heroTitleScale: 1.0,    // 自由縮放倍率
+    heroTitleRotate: 0,     // 旋轉角度（deg）
     avatarData:'', avatarUrl:'',
     avatarFlipX: false,      // 大頭照水平翻轉
     avatarSize: 'md',
@@ -1007,6 +1009,7 @@ function newCard(){
     avatarX: null,  // null = 預設右上角
     avatarY: null,
     avatarScale: 1.0, // 自由縮放倍數
+    avatarRotate: 0,  // 旋轉角度（deg）
     footerBg: '#ffffff',
     buttons:[]
   };
@@ -1506,9 +1509,25 @@ function renderFields(){
         </div>
       </div>
 
-      <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'};display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f8f8f8;border-radius:6px;font-size:11px">
-        <div style="color:#666">📍 拖曳：在預覽區點住標題拖到任意位置</div>
-        ${(c.heroTitleX||c.heroTitleY)?`<button onclick="resetHeroTitlePos()" style="padding:3px 8px;font-size:10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 歸零</button>`:''}
+      <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'};padding:8px 10px;background:#f8f8f8;border-radius:6px">
+        <div style="font-size:11px;color:#666;margin-bottom:6px">📍 拖曳：在預覽區點住標題拖到任意位置</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+          <div>
+            <div style="font-size:10px;color:#888;margin-bottom:3px">縮放（${(c.heroTitleScale||1.0).toFixed(2)}x）</div>
+            <div style="display:flex;gap:4px">
+              <button onclick="bumpHeroTitleScale(-0.1)" style="flex:1;padding:5px;font-size:13px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">−</button>
+              <button onclick="bumpHeroTitleScale(0.1)" style="flex:1;padding:5px;font-size:13px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">+</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#888;margin-bottom:3px">旋轉（${(c.heroTitleRotate||0)}°）</div>
+            <div style="display:flex;gap:4px">
+              <button onclick="bumpHeroTitleRotate(-15)" style="flex:1;padding:5px;font-size:13px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">↺</button>
+              <button onclick="bumpHeroTitleRotate(15)" style="flex:1;padding:5px;font-size:13px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">↻</button>
+            </div>
+          </div>
+        </div>
+        ${(c.heroTitleX||c.heroTitleY||(c.heroTitleScale&&c.heroTitleScale!==1.0)||(c.heroTitleRotate&&c.heroTitleRotate!==0))?`<button onclick="resetHeroTitlePos()" style="width:100%;padding:5px;font-size:10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 全部歸零（位置 + 縮放 + 旋轉）</button>`:''}
       </div>
     </div>
 
@@ -1540,7 +1559,15 @@ function renderFields(){
           </div>
         </div>
       </div>
-      <div class="fhint" style="margin-top:6px">大頭照會疊在背景圖的左下角（預設），可調整位置與大小。</div>
+      <div style="margin-top:8px;padding:8px 10px;background:#f8f8f8;border-radius:6px">
+        <div style="font-size:10px;color:#888;margin-bottom:5px">旋轉（${(c.avatarRotate||0)}°）</div>
+        <div style="display:flex;gap:4px">
+          <button onclick="bumpAvatarRotate(-15)" style="flex:1;padding:6px;font-size:14px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">↺</button>
+          <button onclick="bumpAvatarRotate(15)" style="flex:1;padding:6px;font-size:14px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer">↻</button>
+          ${(c.avatarRotate||0)!==0?`<button onclick="resetAvatarRotate()" style="flex:1;padding:6px;font-size:11px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 歸零</button>`:''}
+        </div>
+      </div>
+      <div class="fhint" style="margin-top:6px">大頭照會疊在背景圖的左下角（預設），可調整位置、大小與旋轉。</div>
     </div>
 
     <div class="field">
@@ -1813,7 +1840,31 @@ function resetHeroTitlePos(){
   const c = G.cards[G.cur];
   c.heroTitleX = 0;
   c.heroTitleY = 0;
-  render();
+  c.heroTitleScale = 1.0;
+  c.heroTitleRotate = 0;
+  renderFields(); render();
+}
+// hero 標題：旋轉 ± 5°、縮放 ± 0.1x
+function bumpHeroTitleRotate(delta){
+  const c = G.cards[G.cur];
+  c.heroTitleRotate = ((c.heroTitleRotate||0) + delta) % 360;
+  renderFields(); render();
+}
+function bumpHeroTitleScale(delta){
+  const c = G.cards[G.cur];
+  const next = Math.max(0.3, Math.min(4.0, (c.heroTitleScale||1.0) + delta));
+  c.heroTitleScale = Math.round(next * 100) / 100;
+  renderFields(); render();
+}
+// avatar：旋轉 ± 5°
+function bumpAvatarRotate(delta){
+  const c = G.cards[G.cur];
+  c.avatarRotate = ((c.avatarRotate||0) + delta) % 360;
+  renderFields(); render();
+}
+function resetAvatarRotate(){
+  G.cards[G.cur].avatarRotate = 0;
+  renderFields(); render();
 }
 function setHeroTitleSize(v,el){
   G.cards[G.cur].heroTitleSize=v;
@@ -1979,16 +2030,17 @@ function composeHero(c){
           ctx.rect(x,y,avW,avH);
         }
         ctx.clip();
-        // draw avatar image
+        // draw avatar image — flipX + rotate 都套到 image transformation
         const s=Math.max(avW/img.width,avH/img.height);
         const iw=img.width*s,ih=img.height*s;
-        if(c.avatarFlipX){
-          ctx.translate(x+avW, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(img, (avW-iw)/2, y+(avH-ih)/2, iw, ih);
-        } else {
-          ctx.drawImage(img,x+(avW-iw)/2,y+(avH-ih)/2,iw,ih);
-        }
+        const avRotate = (c.avatarRotate || 0) * Math.PI / 180;
+        const cx = x + avW/2;
+        const cy = y + avH/2;
+        // 將原點搬到 avatar 中心，套用 rotate / flip，再畫圖
+        ctx.translate(cx, cy);
+        if(avRotate) ctx.rotate(avRotate);
+        if(c.avatarFlipX) ctx.scale(-1, 1);
+        ctx.drawImage(img, -iw/2, -ih/2, iw, ih);
         ctx.restore();
 
         // (no border stroke - allows avatar to blend naturally with background)
@@ -2003,34 +2055,40 @@ function composeHero(c){
       if(!c.heroTitle) return;
       const sizeMap = {sm: W*0.055, md: W*0.085, lg: W*0.12};
       const fontSize = sizeMap[c.heroTitleSize||'md'];
-      // 套用 user 選擇的字體（不同字體 fallback chain）
-      ctx.font = `800 ${fontSize}px ${heroFontStack(c.heroTitleFont)}`;
       ctx.textBaseline = 'middle';
-      let x;
-      if(c.heroTitlePos === 'left'){ ctx.textAlign = 'left';   x = W*0.05; }
-      else if(c.heroTitlePos === 'right'){ ctx.textAlign = 'right';  x = W*0.95; }
-      else { ctx.textAlign = 'center'; x = W/2; }
-      let y = H/2;
-      // 套用拖曳偏移（preview 是 210px 寬，輸出是 W px，要等比放大）
+      // 套用 user 選擇的字體
+      ctx.font = `800 ${fontSize}px ${heroFontStack(c.heroTitleFont)}`;
+      // 拖曳偏移（preview 210px → 輸出 W px，等比放大）
       const previewW = 210;
       const scaleRatio = W / previewW;
-      x += (c.heroTitleX || 0) * scaleRatio;
-      y += (c.heroTitleY || 0) * scaleRatio;
-      // 文字陰影（讓深色文字在亮背景或反之都看得清楚）
+      const cx = W/2 + (c.heroTitleX || 0) * scaleRatio;
+      const cy = H/2 + (c.heroTitleY || 0) * scaleRatio;
+      const userScale = c.heroTitleScale || 1.0;
+      const userRotate = (c.heroTitleRotate || 0) * Math.PI / 180;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(userRotate);
+      ctx.scale(userScale, userScale);
+
+      // align 在旋轉後的座標系裡
+      let drawX = 0;
+      if(c.heroTitlePos === 'left'){ ctx.textAlign = 'left';   drawX = -W*0.45; }
+      else if(c.heroTitlePos === 'right'){ ctx.textAlign = 'right';  drawX = W*0.45; }
+      else { ctx.textAlign = 'center'; drawX = 0; }
+
+      // 文字陰影
       ctx.shadowColor = 'rgba(0,0,0,0.35)';
       ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 2;
       ctx.fillStyle = c.heroTitleColor || '#ffffff';
+
       // 自動換行（最多兩行，每行最大 90% W）
       const maxWidth = W * 0.9;
-      const words = c.heroTitle.split(/(\s+)/);
       const lines = [];
-      let line = '';
-      // 中文或無空格時直接量整段
       if(ctx.measureText(c.heroTitle).width <= maxWidth){
         lines.push(c.heroTitle);
       } else {
-        // 簡單斷字
         let cur = '';
         for(const ch of c.heroTitle){
           if(ctx.measureText(cur+ch).width > maxWidth){
@@ -2045,14 +2103,11 @@ function composeHero(c){
       }
       const lineH = fontSize * 1.2;
       const totalH = lineH * lines.length;
-      const startY = y - totalH/2 + lineH/2;
+      const startY = -totalH/2 + lineH/2;
       lines.forEach((ln, i) => {
-        ctx.fillText(ln, x, startY + i*lineH);
+        ctx.fillText(ln, drawX, startY + i*lineH);
       });
-      // reset shadow
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
+      ctx.restore();
     };
 
     drawBg().then(drawAv).then(()=>{
@@ -2228,11 +2283,16 @@ function render(){
     const avX=c.avatarX||0, avY=c.avatarY||0;
     const avShapeStyle=c.avatarShape==='circle'?`border-radius:50%`
       :c.avatarShape==='rounded'?`border-radius:20%`:`border-radius:4px`;
+    const avRotate = c.avatarRotate || 0;
+    // avatar 旋轉做在 img 內層（避免影響拖曳 hit-area）
+    const imgTransforms = [];
+    if(c.avatarFlipX) imgTransforms.push('scaleX(-1)');
+    if(avRotate) imgTransforms.push(`rotate(${avRotate}deg)`);
     const avatarEl=avSrc?`
       <div class="av-wrap" data-card="${i}"
         style="position:absolute;bottom:7px;left:${avBaseLeft};right:${avBaseRight};width:${avW}px;height:${avH}px;z-index:2;touch-action:none;cursor:move;transform:${avTransform} translate(${avX}px,${avY}px)">
         <img src="${avSrc}" class="av-draggable" data-card="${i}"
-          style="width:100%;height:100%;${avShapeStyle};object-fit:cover;display:block;pointer-events:none;user-select:none;${c.avatarFlipX?'transform:scaleX(-1);':''}">
+          style="width:100%;height:100%;${avShapeStyle};object-fit:cover;display:block;pointer-events:none;user-select:none;${imgTransforms.length?`transform:${imgTransforms.join(' ')};`:''}">
         <div class="av-sz-handle" data-card="${i}"
           style="position:absolute;bottom:-7px;right:-7px;width:16px;height:16px;background:#00b900;border:2.5px solid #fff;border-radius:50%;cursor:se-resize;z-index:5;touch-action:none"></div>
       </div>
@@ -2251,10 +2311,13 @@ function render(){
     const heroTitleTextAlign = c.heroTitlePos || 'center';
     const htX = c.heroTitleX || 0;
     const htY = c.heroTitleY || 0;
+    const htScale = c.heroTitleScale || 1.0;
+    const htRotate = c.heroTitleRotate || 0;
     const isCurrent = i === G.cur;
+    // 內層 div 做 rotate+scale，外層做 translate（避免 transform 套疊難算）
     const heroTitleEl = c.heroTitle ? `
       <div class="hero-title-wrap" data-card="${i}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlign};padding:0 16px;z-index:3;${isCurrent?'cursor:move':'pointer-events:none'};transform:translate(${htX}px,${htY}px)">
-        <div style="font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word;font-family:${heroFontStack(c.heroTitleFont)};pointer-events:none;user-select:none">${esc(c.heroTitle)}</div>
+        <div style="font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word;font-family:${heroFontStack(c.heroTitleFont)};pointer-events:none;user-select:none;transform:rotate(${htRotate}deg) scale(${htScale});transform-origin:center">${esc(c.heroTitle)}</div>
       </div>
     ` : '';
 
@@ -3715,6 +3778,9 @@ function applyProjectState(state){
     if(c.heroTitleFont === undefined) c.heroTitleFont = 'sans';
     if(c.heroTitleX === undefined) c.heroTitleX = 0;
     if(c.heroTitleY === undefined) c.heroTitleY = 0;
+    if(c.heroTitleScale === undefined) c.heroTitleScale = 1.0;
+    if(c.heroTitleRotate === undefined) c.heroTitleRotate = 0;
+    if(c.avatarRotate === undefined) c.avatarRotate = 0;
     if(c.ratio === undefined) c.ratio = ''; // 舊資料用 G.ratio
     if(c.titleAlign === undefined) c.titleAlign = 'left';
     if(c.titleFont === undefined) c.titleFont = 'sans';
