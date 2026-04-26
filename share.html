@@ -542,9 +542,10 @@ function renderCards(state) {
     const heroInfo = getHero(i, c);
     const heroUrl = heroInfo.url;
     const avatarSrc = getAvatar(c);
-    // 重要：當 hero 是 LINE 合成圖（內含 avatar）時，share.html 不該再疊一個 avatar
-    const shouldRenderAvatarOverlay = avatarSrc && !heroInfo.alreadyHasAvatar;
-    const av = shouldRenderAvatarOverlay ? getAvatarStyle(c) : null;
+    // share.html 永遠不渲染 avatar overlay（hero 圖內已燒進 avatar）
+    // 避免「合成圖內 avatar + share.html 又疊一個」的兩個 avatar 問題
+    const shouldRenderAvatarOverlay = false;
+    const av = null;
 
     // hero 區：純色 / 圖片 / 沒圖（fallback 用 bgColor 整體背景）
     const isColorMode = c.bgMode === 'color';
@@ -616,7 +617,7 @@ function renderCards(state) {
       ? `<div class="card-desc" style="${descStyle}">${esc(c.desc)}</div>`
       : '';
     const bodyHtml = (titleHtml || descHtml)
-      ? `<div class="card-body" style="${avatarSrc ? `padding-top:${(av && av.wrapStyle.includes('100px')) ? 56 : 44}px` : ''}">${titleHtml}${descHtml}</div>`
+      ? `<div class="card-body">${titleHtml}${descHtml}</div>`
       : '';
 
     // 用戶設定的 buttons（全寬長條，保留用戶顏色）
