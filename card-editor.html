@@ -3209,29 +3209,38 @@ async function persistCropResult(dataUrl, layer, isAvatar){
   await queueUpload(dataUrl, cardIndex, layer);
 }
 
-async function doCopy(){
+function doCopy(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
-  if(!apiKey){
-    alert('❌ 請先填 ImgBB Key（左側欄頂部）才能複製 JSON');
-    return;
-  }
-  try{
-    toast('⏳ 合成整張卡片...');
-    const fullCards = await Promise.all(G.cards.map(c=>composeFullCard(c)));
-    const fullCardsWithUrl = [];
-    for(let i = 0; i < fullCards.length; i++){
-      toast(`⏳ 上傳第 ${i+1}/${fullCards.length} 張...`);
-      const fc = fullCards[i];
-      const url = await uploadToImgBB(fc.imageDataUrl, apiKey);
-      fullCardsWithUrl.push({...fc, imageUrl: url});
+  toast('⏳ 合成圖片中...');
+  Promise.all(G.cards.map(c=>composeHero(c))).then(async heroDataUrls=>{
+    if(!apiKey){
+      const hasImg = heroDataUrls.some(u=>u && u.startsWith('data:'));
+      const j = JSON.stringify(buildJson(heroDataUrls),null,2);
+      await navigator.clipboard.writeText(j);
+      if(hasImg){
+        toast('⚠️ 已複製，但圖片是 base64，LINE 不支援！請填 ImgBB Key 後再試');
+      } else {
+        toast('✅ 已複製！');
+      }
+      return;
     }
-    const j = JSON.stringify(buildJsonImageOnly(fullCardsWithUrl), null, 2);
-    await navigator.clipboard.writeText(j);
-    toast('✅ JSON 已複製，可貼到 LINE Flex 工具');
-  } catch(err){
-    console.error('doCopy 失敗', err);
-    toast('❌ 失敗：'+err.message);
-  }
+    toast('⏳ 上傳圖片到圖床中...');
+    try{
+      const uploadedUrls = await Promise.all(
+        heroDataUrls.map(async (url, i)=>{
+          if(!url || !url.startsWith('data:')) return url;
+          toast(`⏳ 上傳第 ${i+1} 張...`);
+          return await uploadToImgBB(url, apiKey);
+        })
+      );
+      const j = JSON.stringify(buildJson(uploadedUrls),null,2);
+      await navigator.clipboard.writeText(j);
+      toast('✅ 已複製！');
+    } catch(err){
+      console.error('上傳失敗', err);
+      toast('❌ 上傳失敗：'+err.message);
+    }
+  });
 }
 function buildTaichunminJson(heroUrls){
   // 把內部 G state 轉成 taichunmin 網站的 json5 格式
@@ -3367,24 +3376,25 @@ async function openOrig(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
   toast('⏳ 準備中...');
   try{
-    // 1. 合成「整張卡片」(image-only) — title/desc/buttons 全部燒進圖片，視覺零限制
-    toast('⏳ 合成圖片中...');
-    const fullCards = await Promise.all(G.cards.map(card=>composeFullCard(card)));
+    // 1. 合成 hero 圖
+    const heroDataUrls = await Promise.all(G.cards.map(card=>composeHero(card)));
+    let finalUrls = heroDataUrls;
 
-    // 2. 上傳每張完整卡圖到 ImgBB
-    if(!apiKey){
-      throw new Error('未填 ImgBB Key，無法上傳整張卡圖（左側欄頂部設定）');
-    }
-    const fullCardsWithUrl = [];
-    for(let i = 0; i < fullCards.length; i++){
-      toast(`⏳ 上傳第 ${i+1}/${fullCards.length} 張卡片...`);
-      const fc = fullCards[i];
-      const url = await uploadToImgBB(fc.imageDataUrl, apiKey);
-      fullCardsWithUrl.push({...fc, imageUrl: url});
+    // 2. 上傳圖片到 ImgBB
+    if(apiKey){
+      toast('⏳ 上傳圖片中...');
+      finalUrls = await Promise.all(heroDataUrls.map(async (url,i)=>{
+        if(!url || !url.startsWith('data:')) return url;
+        toast(`⏳ 上傳第 ${i+1} 張...`);
+        return await uploadToImgBB(url, apiKey);
+      }));
+    } else if(heroDataUrls.some(u=>u&&u.startsWith('data:'))){
+      toast('⚠️ 圖片未上傳（未填 ImgBB Key），LINE 將無法顯示圖片');
+      await new Promise(r=>setTimeout(r,1800));
     }
 
-    // 3. 建立 Flex Message（image-only bubble + overlay box 點擊區）
-    const flexMsg = buildJsonImageOnly(fullCardsWithUrl);
+    // 3. 建立 Flex Message（hero + body + footer 經典結構）
+    const flexMsg = buildJson(finalUrls);
     const msg = {
       type: 'flex',
       altText: G.altText || '請在手機上查看數位版名片。',
