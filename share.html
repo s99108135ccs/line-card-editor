@@ -13,7 +13,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+XiaoWei&family=Long+Cang&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=DotGothic16&family=Bebas+Neue&family=Bungee&family=Playfair+Display:wght@700;900&family=Pacifico&family=Permanent+Marker&family=Press+Start+2P&family=VT323&family=Plaster&family=Major+Mono+Display&family=Cinzel:wght@700;900&family=Russo+One&family=Anton&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -545,12 +545,28 @@ function renderCards(state) {
 
     // hero 標題（疊在背景上，字體 + 偏移）
     const HERO_FONTS = {
-      sans:    "'Noto Sans TC', -apple-system, sans-serif",
-      serif:   "'Noto Serif TC', serif",
-      kai:     "'ZCOOL XiaoWei', 'BiauKai', cursive",
-      brush:   "'Ma Shan Zheng', cursive",
-      cursive: "'Long Cang', cursive",
-      mono:    "ui-monospace, monospace"
+      sans:        "'Noto Sans TC', -apple-system, sans-serif",
+      serif:       "'Noto Serif TC', serif",
+      kai:         "'ZCOOL XiaoWei', 'BiauKai', sans-serif",
+      rounded_tc:  "'ZCOOL KuaiLe', sans-serif",
+      bold_tc:     "'ZCOOL QingKe HuangYou', sans-serif",
+      brush:       "'Ma Shan Zheng', cursive",
+      brush2:      "'Liu Jian Mao Cao', cursive",
+      pixel:       "'Press Start 2P', monospace",
+      pixel_tall:  "'VT323', monospace",
+      display:     "'Bebas Neue', sans-serif",
+      bungee:      "'Bungee', sans-serif",
+      marker:      "'Permanent Marker', cursive",
+      caveat:      "'Caveat', cursive",
+      pacifico:    "'Pacifico', cursive",
+      playfair:    "'Playfair Display', serif",
+      cinzel:      "'Cinzel', serif",
+      plaster:     "'Plaster', sans-serif",
+      major_mono:  "'Major Mono Display', monospace",
+      russo:       "'Russo One', sans-serif",
+      anton:       "'Anton', sans-serif",
+      dot_gothic:  "'DotGothic16', monospace",
+      mono:        "ui-monospace, monospace"
     };
     const heroTitleSizeMap = {sm:'5vw', md:'7vw', lg:'10vw'};
     const heroTitleAlignMap = {left:'flex-start', center:'center', right:'flex-end'};
