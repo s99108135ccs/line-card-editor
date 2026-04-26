@@ -834,9 +834,14 @@ async function initLiffOptional() {
     return;
   }
 
-  renderCards(state);
-  $('#loading').hidden = true;
-  $('#content').hidden = false;
+  try {
+    renderCards(state);
+    $('#loading').hidden = true;
+    $('#content').hidden = false;
+  } catch(e){
+    console.error('renderCards 失敗', e);
+    showError('渲染名片失敗：' + (e.message || e));
+  }
 })();
 </script>
 
