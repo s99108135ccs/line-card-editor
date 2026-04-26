@@ -515,12 +515,14 @@ function renderCards(state) {
   const pendingCards = state.pendingMsg?.contents?.contents || [];
   // 過濾 card-editor 的 '[本地圖片]' placeholder（非真 URL）
   const isValidUrl = (s) => s && typeof s === 'string' && (s.startsWith('http') || s.startsWith('data:'));
+  // 回傳 {url, alreadyHasAvatar}
+  // alreadyHasAvatar=true 表示這張 hero 是 LINE 用的合成圖（內含 avatar），share.html 不該再疊一個
   const getHero = (idx, card) => {
     const fromPending = pendingCards[idx]?.hero?.url;
-    if (isValidUrl(fromPending)) return fromPending;
-    if (isValidUrl(card.bgImgUrl)) return card.bgImgUrl;
-    if (isValidUrl(card.bgImgData)) return card.bgImgData;
-    return '';
+    if (isValidUrl(fromPending)) return {url: fromPending, alreadyHasAvatar: true};
+    if (isValidUrl(card.bgImgUrl)) return {url: card.bgImgUrl, alreadyHasAvatar: false};
+    if (isValidUrl(card.bgImgData)) return {url: card.bgImgData, alreadyHasAvatar: false};
+    return {url: '', alreadyHasAvatar: false};
   };
   const getAvatar = (card) => {
     if (isValidUrl(card.avatarUrl)) return card.avatarUrl;
@@ -537,16 +539,19 @@ function renderCards(state) {
 
   const wrap = $('#cards');
   wrap.innerHTML = cards.map((c, i) => {
-    const hero = getHero(i, c);
+    const heroInfo = getHero(i, c);
+    const heroUrl = heroInfo.url;
     const avatarSrc = getAvatar(c);
-    const av = avatarSrc ? getAvatarStyle(c) : null;
+    // 重要：當 hero 是 LINE 合成圖（內含 avatar）時，share.html 不該再疊一個 avatar
+    const shouldRenderAvatarOverlay = avatarSrc && !heroInfo.alreadyHasAvatar;
+    const av = shouldRenderAvatarOverlay ? getAvatarStyle(c) : null;
 
     // hero 區：純色 / 圖片 / 沒圖（fallback 用 bgColor 整體背景）
     const isColorMode = c.bgMode === 'color';
     const heroBgStyle = isColorMode
       ? `background-color:${esc(c.bgSolidColor || '#0d0d0d')};`
-      : (hero
-          ? `background-image:url(${JSON.stringify(hero).slice(1,-1)});`
+      : (heroUrl
+          ? `background-image:url(${JSON.stringify(heroUrl).slice(1,-1)});`
           : `background-color:${esc(c.bgColor || '#ffffff')};`);
     const heroFlipClass = (!isColorMode && c.bgFlipX) ? ' flip' : '';
 
@@ -596,7 +601,7 @@ function renderCards(state) {
     ` : '';
 
     const heroHtml = `<div class="card-hero${heroFlipClass}" style="aspect-ratio:${cardRatioStr(c)};${heroBgStyle}${c.link ? 'cursor:pointer;' : ''};position:relative" ${c.link ? `data-link="${esc(c.link)}"` : ''}>
-        ${avatarSrc ? `<div class="card-avatar ${av.shapeClass}" style="${av.wrapStyle}"><img src="${esc(avatarSrc)}" alt="" style="${av.imgStyle}"></div>` : ''}
+        ${shouldRenderAvatarOverlay ? `<div class="card-avatar ${av.shapeClass}" style="${av.wrapStyle}"><img src="${esc(avatarSrc)}" alt="" style="${av.imgStyle}"></div>` : ''}
         ${heroTitleHtml}
       </div>`;
 
