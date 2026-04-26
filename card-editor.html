@@ -423,75 +423,8 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
     <!-- 整體配色（一鍵套用全部卡片） -->
     <div style="padding:12px 16px;border-bottom:1.5px solid var(--border);background:#fff">
       <div class="flabel" style="margin-bottom:8px">🎨 整體配色（改了會同步全部卡片）</div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <!-- 背景色（footer 後面） -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-0" value="#ffffff"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(0,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">背景色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">整張卡片底色（含按鈕後面）</div>
-          </div>
-          <span id="cv-custom-0" style="font-size:10px;color:#aaa;font-family:monospace">#ffffff</span>
-        </div>
-        <!-- 標題背景色 -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-1" value="#ffffff"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(1,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">標題背景色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">標題 + 說明文字後面</div>
-          </div>
-          <span id="cv-custom-1" style="font-size:10px;color:#aaa;font-family:monospace">#ffffff</span>
-        </div>
-        <!-- 標題文字色 -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-2" value="#111111"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(2,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">標題文字色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">所有卡片標題的文字顏色</div>
-          </div>
-          <span id="cv-custom-2" style="font-size:10px;color:#aaa;font-family:monospace">#111111</span>
-        </div>
-        <!-- 說明文字色 -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-3" value="#555555"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(3,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">說明文字色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">所有卡片說明文字的顏色</div>
-          </div>
-          <span id="cv-custom-3" style="font-size:10px;color:#aaa;font-family:monospace">#555555</span>
-        </div>
-        <!-- 按鈕顏色 -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-4" value="#00b900"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(4,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">按鈕顏色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">所有按鈕的背景色</div>
-          </div>
-          <span id="cv-custom-4" style="font-size:10px;color:#aaa;font-family:monospace">#00b900</span>
-        </div>
-        <!-- 按鈕文字色 -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="color" id="custom-color-5" value="#ffffff"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
-            oninput="setCustomColor(5,this.value)">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#444">按鈕文字色</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">所有按鈕的文字顏色</div>
-          </div>
-          <span id="cv-custom-5" style="font-size:10px;color:#aaa;font-family:monospace">#ffffff</span>
-        </div>
-      </div>
-      <div class="fhint" style="margin-top:6px">點任一色 → 立即套用到所有卡片（個別卡片仍可獨立 override）。</div>
+      <div id="brand-colors-container" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="fhint" style="margin-top:8px">改色會自動記憶到「最近用色」<span style="font-weight:600">⬤ ⬤ ⬤</span>。點 hex 文字框可直接打字改色。</div>
     </div>
 
 
@@ -1036,6 +969,7 @@ let G = {
   altText:'請在手機上查看數位版名片。',
   ratio:'20:13',
   customColors:['#ffffff','#ffffff','#111111','#555555','#00b900','#ffffff'],
+  favoriteColors:['#ffffff','#000000','#00b900'], // 整體配色 6 slot 的「最近用色」3 slot（自動記憶 FIFO）
   btnWidth:'full',
   titleSize:'md',
   descSize:'sm',
@@ -1084,8 +1018,15 @@ function newCard(){
 
 function setCustomColor(idx, hex){
   G.customColors[idx] = hex;
+  // 同步 hex input 顯示
   const cv = document.getElementById('cv-custom-'+idx);
-  if(cv) cv.textContent = hex;
+  if(cv){
+    if(cv.tagName === 'INPUT') cv.value = hex; else cv.textContent = hex;
+  }
+  // 同步 color picker（從 hex input 改色時要 sync 回來）
+  const picker = document.getElementById('custom-color-'+idx);
+  if(picker && picker.value !== hex) picker.value = hex;
+
   // 同步套用到全部卡片：6 個 slot 對應到 6 個 LINE Flex 欄位
   // 0:背景色 (footerBg) / 1:標題背景色 (bgColor) / 2:標題文字 / 3:說明文字 / 4:按鈕色 / 5:按鈕文字色
   if(idx === 0){
@@ -1101,8 +1042,102 @@ function setCustomColor(idx, hex){
   } else if(idx === 5){
     G.cards.forEach(c => (c.buttons||[]).forEach(b => { b.textColor = hex; }));
   }
+  // 自動記憶到「最近用色」FIFO
+  pushFavoriteColor(hex);
   renderFields();
   render();
+}
+
+// hex 文字框直接編輯：驗證後套用
+function setCustomColorByHex(idx, raw){
+  let hex = (raw||'').trim();
+  if(!hex.startsWith('#')) hex = '#' + hex;
+  if(!/^#[0-9a-f]{6}$/i.test(hex)){
+    // 格式錯 → 還原顯示
+    const inp = document.getElementById('cv-custom-'+idx);
+    if(inp) inp.value = G.customColors[idx];
+    toast('⚠️ 請輸入正確 hex 格式（例：#ff0000）');
+    return;
+  }
+  setCustomColor(idx, hex.toLowerCase());
+}
+
+// FIFO 推進「最近用色」3 slot（重複會移到最前）
+function pushFavoriteColor(hex){
+  hex = (hex||'').toLowerCase();
+  if(!/^#[0-9a-f]{6}$/i.test(hex)) return;
+  // 如果已存在，先移除
+  const existing = G.favoriteColors.indexOf(hex);
+  if(existing !== -1) G.favoriteColors.splice(existing, 1);
+  // 推到最前面
+  G.favoriteColors.unshift(hex);
+  G.favoriteColors = G.favoriteColors.slice(0, 3);
+  syncFavoriteDotsUI();
+}
+
+// 點 favorite dot：套用該色到該 slot
+function applyFavoriteToSlot(slotIdx, favIdx){
+  const hex = G.favoriteColors[favIdx];
+  if(!hex) return;
+  setCustomColor(slotIdx, hex);
+}
+
+// 更新所有 favorite dot 的顯示色（不重 render，直接改 style）
+function syncFavoriteDotsUI(){
+  for(let slotIdx = 0; slotIdx < 6; slotIdx++){
+    for(let favIdx = 0; favIdx < 3; favIdx++){
+      const dot = document.getElementById(`fav-${slotIdx}-${favIdx}`);
+      if(dot){
+        const c = G.favoriteColors[favIdx] || '#fff';
+        dot.style.background = c;
+        dot.title = c;
+      }
+    }
+  }
+}
+
+// 動態 render 整體配色 6 個 slot（每個 slot 含 color picker + hex input + 3 個 favorite dot）
+const BRAND_COLOR_SLOTS = [
+  {idx:0, name:'背景色',     hint:'整張卡片底色（含按鈕後面）'},
+  {idx:1, name:'標題背景色', hint:'標題 + 說明文字後面'},
+  {idx:2, name:'標題文字色', hint:'所有卡片標題的文字顏色'},
+  {idx:3, name:'說明文字色', hint:'所有卡片說明文字的顏色'},
+  {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色'},
+  {idx:5, name:'按鈕文字色', hint:'所有按鈕的文字顏色'}
+];
+function renderBrandColors(){
+  const wrap = document.getElementById('brand-colors-container');
+  if(!wrap) return;
+  wrap.innerHTML = BRAND_COLOR_SLOTS.map(s => {
+    const cur = G.customColors[s.idx] || '#ffffff';
+    return `
+      <div style="padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="color" id="custom-color-${s.idx}" value="${cur}"
+            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
+            oninput="setCustomColor(${s.idx},this.value)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:#444">${s.name}</div>
+            <div style="font-size:10px;color:#999;line-height:1.3">${s.hint}</div>
+          </div>
+          <input id="cv-custom-${s.idx}" type="text" value="${cur}" maxlength="7"
+            style="width:78px;height:24px;font-size:10px;font-family:monospace;border:1px solid #ddd;border-radius:4px;padding:2px 6px;text-align:center;flex-shrink:0"
+            onchange="setCustomColorByHex(${s.idx},this.value)"
+            onclick="this.select()">
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;margin-top:5px;padding-left:46px">
+          <span style="font-size:9px;color:#aaa">最近：</span>
+          <div id="fav-${s.idx}-0" onclick="applyFavoriteToSlot(${s.idx},0)" title=""
+            style="width:18px;height:18px;border-radius:50%;border:1.5px solid #ccc;cursor:pointer;background:${G.favoriteColors[0]||'#fff'}"></div>
+          <div id="fav-${s.idx}-1" onclick="applyFavoriteToSlot(${s.idx},1)" title=""
+            style="width:18px;height:18px;border-radius:50%;border:1.5px solid #ccc;cursor:pointer;background:${G.favoriteColors[1]||'#fff'}"></div>
+          <div id="fav-${s.idx}-2" onclick="applyFavoriteToSlot(${s.idx},2)" title=""
+            style="width:18px;height:18px;border-radius:50%;border:1.5px solid #ccc;cursor:pointer;background:${G.favoriteColors[2]||'#fff'}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  syncFavoriteDotsUI();
 }
 
 function pickSize(el,groupId,stateKey){
@@ -3625,6 +3660,7 @@ function getProjectState(){
     btnSize: G.btnSize,
     btnWidth: G.btnWidth,
     customColors: G.customColors,
+    favoriteColors: G.favoriteColors,
     cur: G.cur,
     cards: G.cards,
     apiKeys: {
@@ -3648,6 +3684,11 @@ function applyProjectState(state){
   const defaults = ['#ffffff','#ffffff','#111111','#555555','#00b900','#ffffff'];
   for(let i = 0; i < 6; i++){
     if(G.customColors[i] === undefined) G.customColors[i] = defaults[i];
+  }
+  // favoriteColors（最近用色）
+  G.favoriteColors = state.favoriteColors || ['#ffffff','#000000','#00b900'];
+  for(let i = 0; i < 3; i++){
+    if(G.favoriteColors[i] === undefined) G.favoriteColors[i] = ['#ffffff','#000000','#00b900'][i];
   }
   G.cur = state.cur || 0;
   G.cards = state.cards;
@@ -4064,15 +4105,10 @@ function syncGlobalUI(){
       btn.classList.toggle('on', btn.dataset.v === String(G[key]));
     });
   });
-  // 同步自訂顏色輸入框
-  (G.customColors||[]).forEach((hex,i)=>{
-    const el = document.getElementById('custom-color-'+i);
-    const cv = document.getElementById('cv-custom-'+i);
-    if(el) el.value = hex;
-    if(cv) cv.textContent = hex;
-  });
+  // 重 render 整體配色（每次載入專案 / 變動時要重畫，因為 hex input 是 value-controlled）
+  renderBrandColors();
 }
-function renderAll(){renderTabs();renderFields();render()}
+function renderAll(){renderTabs();renderFields();render();renderBrandColors()}
 
 // ══════════════════════════════════════════
 //  獨立預覽視窗同步
