@@ -1419,7 +1419,8 @@ function renderFields(){
           return `<button class="av-opt${isOn?' on':''}" onclick="setCardRatio('${r.v}')" style="flex:1;min-width:50px;padding:6px 4px;font-size:11px"><div style="font-weight:700">${r.label}</div><div style="font-size:9px;color:#999;margin-top:1px">${r.sub}</div></button>`;
         }).join('')}
       </div>
-      <div class="fhint" style="margin-bottom:12px">改裁切形狀時這個會自動同步。</div>
+      <div class="fhint" style="margin-bottom:6px">改裁切形狀時這個會自動同步。</div>
+      <button onclick="syncRatioToAll()" style="width:100%;padding:7px;font-size:11px;border:1px solid #00b900;background:#f0f8f0;color:#00b900;border-radius:6px;cursor:pointer;margin-bottom:8px;font-weight:600">🔄 同步這個比例到所有卡片（避免 LINE 上有空白）</button>
     </div>
 
     <div class="field">
@@ -1842,6 +1843,16 @@ const HERO_FONT_CHOICES = [
 function setCardRatio(r){
   G.cards[G.cur].ratio = r;
   renderFields(); render();
+}
+// 同步當前卡比例到所有其他卡（避免 LINE carousel 等高造成空白）
+function syncRatioToAll(){
+  const cur = G.cards[G.cur];
+  if(!cur) return;
+  const r = cur.ratio || G.ratio;
+  if(!confirm(`把「第 ${G.cur+1} 張」的比例（${r}）套用到全部 ${G.cards.length} 張卡片？\n\n這能避免 LINE 上看到「desc 跟按鈕之間的空白」。`)) return;
+  G.cards.forEach(c => { c.ratio = r; });
+  renderAll();
+  toast(`✓ 全部 ${G.cards.length} 張卡片改成 ${r}`);
 }
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
