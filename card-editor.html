@@ -1115,7 +1115,8 @@ const BRAND_COLOR_SLOTS = [
   {idx:0, name:'背景色',     hint:'整張卡片底色（標題 + 按鈕後面都套用）'},
   {idx:2, name:'標題文字色', hint:'所有卡片標題的文字顏色'},
   {idx:3, name:'說明文字色', hint:'所有卡片說明文字的顏色'},
-  {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色（文字色 LINE 自動：實心白字 / 灰底深字）'}
+  {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色'},
+  {idx:5, name:'按鈕文字色', hint:'所有按鈕的文字色 ⚠️ 只在 share.html 連結生效，LINE 上會被鎖（LINE 規格限制）'}
 ];
 function renderBrandColors(){
   const wrap = document.getElementById('brand-colors-container');
@@ -2352,7 +2353,11 @@ function renderBtns(ci){
         <div class="field" style="margin-bottom:8px">
           <div class="flabel">🎨 按鈕顏色</div>
           ${mkColorWidget('bc-'+ci+'-'+bi, b.color||'#00b900', BTN_COLORS, v=>updBtn(bi,'color',v))}
-          <div class="fhint" style="margin-top:4px;color:#999">⚠️ LINE 限制：按鈕文字色由樣式自動決定（實心 → 白字 / 灰底 → 深字）</div>
+        </div>
+        <div class="field" style="margin-bottom:8px">
+          <div class="flabel">🔤 按鈕文字色</div>
+          ${mkColorWidget('btc-'+ci+'-'+bi, b.textColor||'#ffffff', TEXT_COLORS, v=>updBtn(bi,'textColor',v))}
+          <div class="fhint" style="margin-top:4px;color:#999;font-size:10px">⚠️ 只在 share.html 連結生效。LINE 上會被鎖（規格限制）</div>
         </div>
         <div style="display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--border)">
           <button class="icon-btn" onclick="movBtn(${bi},-1)">↑ 上移</button>
@@ -2430,11 +2435,10 @@ function render(){
     const ds=DSIZEPX[G.descSize]||'11px';
     const bh=BTN_HPX[G.btnSize]||'48px';
 
-    // 按鈕文字色 LINE 鎖死（primary 白 / secondary 深 / link = color）— preview 跟 LINE 一致
+    // preview 用 b.textColor 顯示（share.html 也會生效）；LINE 端會被鎖白/深字（LINE 規格）
     const btnsHtml=c.buttons.length?`<div class="fcard-footer" style="background:${c.footerBg||'#ffffff'}">${c.buttons.map(b=>{
       const bg=b.style==='link'?`background:transparent;color:${b.color||'#00b900'};font-size:11px`
-        :b.style==='secondary'?`background:${b.color||'#f0f0f0'};color:#111`
-        :`background:${b.color||'#00b900'};color:#fff`;
+        :`background:${b.color||'#00b900'};color:${b.textColor||'#ffffff'}`;
       return `<div class="fbtn" style="${bg};height:${bh}">${esc(b.label)||'按鈕'}</div>`;
     }).join('')}</div>`:'';
 
