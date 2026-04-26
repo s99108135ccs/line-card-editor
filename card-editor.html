@@ -2168,6 +2168,129 @@ function composeHero(c){
   });
 }
 
+// ══════════════════════════════════════════
+//  整張卡片合成圖（hero + body + footer 全部燒進去）
+//  解決：LINE Flex button 不支援 textColor 跟 customFont 的限制
+//  策略：整張卡渲染成 PNG，bubble 改成 image-only + absolute box overlay 點擊區
+//  回傳：{ imageDataUrl, baseW, baseH, buttonRects: [{x,y,w,h,link,label}] }
+// ══════════════════════════════════════════
+async function composeFullCard(c){
+  // 卡片尺寸（LINE Flex carousel bubble 約 1040x1560 → 用 1040 寬好計算）
+  const W = 1040;
+  // 算 hero 區高度（依 ratio）
+  const RATIO_NUM = (() => {
+    const r = cardRatio(c);
+    const m = (r||'20:13').split(':').map(Number);
+    return m[0] / m[1];
+  })();
+  const heroH = Math.round(W / RATIO_NUM);
+  // body 區高度（title + desc 動態算）+ footer 區（buttons）
+  const titlePx = 50, titleLineH = 65, descPx = 36, descLineH = 50;
+  const titleLines = c.title ? Math.min(2, Math.ceil(c.title.length / 16)) : 0;
+  const descLines = c.desc ? Math.min(4, c.desc.split('\n').length) : 0;
+  const bodyPadTop = 36, bodyPadBottom = 24;
+  const bodyH = bodyPadTop + (titleLines * titleLineH) + (descLines ? 16 + descLines * descLineH : 0) + bodyPadBottom;
+  // footer：每個按鈕高 110，間距 16，padding 16
+  const btnH = 110, btnGap = 16, footerPadV = 20;
+  const numBtns = (c.buttons||[]).length;
+  const footerH = numBtns ? (footerPadV*2 + numBtns * btnH + (numBtns-1) * btnGap) : 0;
+  const H = heroH + bodyH + footerH;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 整張底色
+  ctx.fillStyle = c.bgColor || '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // ═══ 1. Hero 區（用 composeHero 輸出再貼進去）═══
+  const heroDataUrl = await composeHero(c);
+  await new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, W, heroH);
+      res();
+    };
+    img.onerror = () => res();
+    img.src = heroDataUrl;
+  });
+
+  // ═══ 2. Body 區（title + desc）═══
+  let bodyY = heroH + bodyPadTop;
+  if(c.title){
+    ctx.font = `700 ${titlePx}px ${heroFontStack(c.titleFont)}`;
+    ctx.fillStyle = c.titleColor || '#111';
+    ctx.textBaseline = 'top';
+    const align = c.titleAlign || 'left';
+    let tx = 32;
+    if(align === 'center'){ ctx.textAlign = 'center'; tx = W/2; }
+    else if(align === 'right'){ ctx.textAlign = 'right'; tx = W - 32; }
+    else { ctx.textAlign = 'left'; }
+    // 簡單一行（超長截斷）
+    let line = c.title;
+    if(ctx.measureText(line).width > W - 64){
+      // 嘗試斷成兩行
+      const half = Math.floor(c.title.length / 2);
+      ctx.fillText(c.title.slice(0, half), tx, bodyY);
+      ctx.fillText(c.title.slice(half), tx, bodyY + titleLineH);
+    } else {
+      ctx.fillText(line, tx, bodyY);
+    }
+    bodyY += titleLines * titleLineH + 16;
+  }
+  if(c.desc){
+    ctx.font = `400 ${descPx}px ${heroFontStack(c.descFont)}`;
+    ctx.fillStyle = c.descColor || '#555';
+    const align = c.descAlign || 'left';
+    let tx = 32;
+    if(align === 'center'){ ctx.textAlign = 'center'; tx = W/2; }
+    else if(align === 'right'){ ctx.textAlign = 'right'; tx = W - 32; }
+    else { ctx.textAlign = 'left'; }
+    c.desc.split('\n').slice(0, 4).forEach((ln, i) => {
+      ctx.fillText(ln, tx, bodyY + i * descLineH);
+    });
+  }
+
+  // ═══ 3. Footer 區（按鈕）═══
+  const buttonRects = [];
+  if(numBtns){
+    let btnY = heroH + bodyH + footerPadV;
+    const btnW = W - 64;
+    const btnX = 32;
+    (c.buttons||[]).forEach((b, idx) => {
+      const bg = b.style === 'link' ? (c.bgColor || '#fff') : (b.color || '#00b900');
+      const fg = b.textColor || (b.style === 'link' ? (b.color || '#00b900') : '#ffffff');
+      // 按鈕底
+      ctx.fillStyle = bg;
+      const radius = 16;
+      ctx.beginPath();
+      ctx.roundRect(btnX, btnY, btnW, btnH, radius);
+      ctx.fill();
+      // 按鈕文字
+      ctx.font = `700 ${descPx}px ${heroFontStack(c.descFont)}`;
+      ctx.fillStyle = fg;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.label || '按鈕', W/2, btnY + btnH/2);
+      // 紀錄按鈕位置（給 LINE Flex absolute box 用）
+      buttonRects.push({
+        x: btnX, y: btnY, w: btnW, h: btnH,
+        link: b.link || 'https://example.com',
+        label: b.label || '按鈕'
+      });
+      btnY += btnH + btnGap;
+    });
+  }
+
+  return {
+    imageDataUrl: canvas.toDataURL('image/png'),
+    baseW: W, baseH: H,
+    buttonRects
+  };
+}
+
 function updCard(field,val){
   G.cards[G.cur][field]=val;
   renderTabs();  // 更新卡片標籤名稱
@@ -2547,6 +2670,59 @@ function scheduleHeroJsonUpdate(){
 // ══════════════════════════════════════════
 //  JSON BUILD
 // ══════════════════════════════════════════
+// 新版 buildJson：每張卡 = 一張完整合成圖 + absolute box 點擊區
+// 用途：解決 LINE Flex button 不支援 textColor / customFont 的限制
+// 輸入：fullCards = [{imageUrl, baseW, baseH, buttonRects: [{x,y,w,h,link,label}]}, ...]
+function buildJsonImageOnly(fullCards){
+  return {
+    type: 'flex',
+    altText: G.altText,
+    contents: {
+      type: 'carousel',
+      contents: G.cards.map((c, i) => {
+        const fc = fullCards[i];
+        if(!fc || !fc.imageUrl){
+          // fallback: 沒成功合成 → 空 bubble（避免整則訊息被拒）
+          return {type:'bubble', body:{type:'box',layout:'vertical',contents:[{type:'text',text:c.title||'（卡片載入中）'}]}};
+        }
+        // overlay box: 每個按鈕一個（用百分比位置）
+        const overlayBoxes = (fc.buttonRects||[]).map(r => ({
+          type: 'box',
+          layout: 'vertical',
+          position: 'absolute',
+          offsetTop:   `${(r.y / fc.baseH * 100).toFixed(2)}%`,
+          offsetStart: `${(r.x / fc.baseW * 100).toFixed(2)}%`,
+          width:       `${(r.w / fc.baseW * 100).toFixed(2)}%`,
+          height:      `${(r.h / fc.baseH * 100).toFixed(2)}%`,
+          action: {type:'uri', uri: r.link, label: r.label || 'open'},
+          contents: [{type:'filler'}] // box 必須有 contents
+        }));
+        return {
+          type: 'bubble',
+          size: 'mega',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: '0px',
+            contents: [
+              {
+                type: 'image',
+                url: fc.imageUrl,
+                size: 'full',
+                aspectMode: 'cover',
+                aspectRatio: `${fc.baseW}:${fc.baseH}`,
+                ...(c.link ? {action: {type:'uri', uri: c.link, label: 'open'}} : {})
+              },
+              ...overlayBoxes
+            ]
+          }
+        };
+      })
+    }
+  };
+}
+
+// Legacy buildJson（保留給 #json-out 預覽用，改用 hero-only 簡化）
 function buildJson(heroDataUrls){
   // LINE Flex button.height 規格：只接受 'sm' 或 'md'（字串），不能是 px 數值
   // 之前用 '40px' / '52px' / '60px' 會被 LINE 後端 validation 拒收 → 整則訊息被 silent drop
@@ -3033,44 +3209,29 @@ async function persistCropResult(dataUrl, layer, isAvatar){
   await queueUpload(dataUrl, cardIndex, layer);
 }
 
-function doCopy(){
+async function doCopy(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
-
-  // 先合成所有 hero 圖（canvas → base64）
-  toast('⏳ 合成圖片中...');
-  Promise.all(G.cards.map(c=>composeHero(c))).then(async heroDataUrls=>{
-
-    // 沒有填 API Key → 直接複製（base64 版，會警告）
-    if(!apiKey){
-      const hasImg = heroDataUrls.some(u=>u && u.startsWith('data:'));
-      const j = JSON.stringify(buildJson(heroDataUrls),null,2);
-      await navigator.clipboard.writeText(j);
-      if(hasImg){
-        toast('⚠️ 已複製，但圖片是 base64，LINE 不支援！請填 ImgBB Key 後再試');
-      } else {
-        toast('✅ 已複製！去原工具貼上「匯入」就好');
-      }
-      return;
+  if(!apiKey){
+    alert('❌ 請先填 ImgBB Key（左側欄頂部）才能複製 JSON');
+    return;
+  }
+  try{
+    toast('⏳ 合成整張卡片...');
+    const fullCards = await Promise.all(G.cards.map(c=>composeFullCard(c)));
+    const fullCardsWithUrl = [];
+    for(let i = 0; i < fullCards.length; i++){
+      toast(`⏳ 上傳第 ${i+1}/${fullCards.length} 張...`);
+      const fc = fullCards[i];
+      const url = await uploadToImgBB(fc.imageDataUrl, apiKey);
+      fullCardsWithUrl.push({...fc, imageUrl: url});
     }
-
-    // 有 API Key → 上傳所有 base64 圖片
-    toast('⏳ 上傳圖片到圖床中...');
-    try{
-      const uploadedUrls = await Promise.all(
-        heroDataUrls.map(async (url, i)=>{
-          if(!url || !url.startsWith('data:')) return url; // 已經是 https 或空，直接用
-          toast(`⏳ 上傳第 ${i+1} 張圖片...`);
-          return await uploadToImgBB(url, apiKey);
-        })
-      );
-      const j = JSON.stringify(buildJson(uploadedUrls),null,2);
-      await navigator.clipboard.writeText(j);
-      toast('✅ 圖片已上傳！JSON 已複製，去原工具貼上即可 🎉');
-    } catch(err){
-      console.error('上傳失敗', err);
-      toast('❌ 上傳失敗：'+err.message);
-    }
-  });
+    const j = JSON.stringify(buildJsonImageOnly(fullCardsWithUrl), null, 2);
+    await navigator.clipboard.writeText(j);
+    toast('✅ JSON 已複製，可貼到 LINE Flex 工具');
+  } catch(err){
+    console.error('doCopy 失敗', err);
+    toast('❌ 失敗：'+err.message);
+  }
 }
 function buildTaichunminJson(heroUrls){
   // 把內部 G state 轉成 taichunmin 網站的 json5 格式
@@ -3206,25 +3367,24 @@ async function openOrig(){
   const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
   toast('⏳ 準備中...');
   try{
-    // 1. 合成圖片
-    const heroDataUrls = await Promise.all(G.cards.map(card=>composeHero(card)));
-    let finalUrls = heroDataUrls;
+    // 1. 合成「整張卡片」(image-only) — title/desc/buttons 全部燒進圖片，視覺零限制
+    toast('⏳ 合成圖片中...');
+    const fullCards = await Promise.all(G.cards.map(card=>composeFullCard(card)));
 
-    // 2. 上傳圖片到 ImgBB
-    if(apiKey){
-      toast('⏳ 上傳圖片中...');
-      finalUrls = await Promise.all(heroDataUrls.map(async (url,i)=>{
-        if(!url || !url.startsWith('data:')) return url;
-        toast(`⏳ 上傳第 ${i+1} 張...`);
-        return await uploadToImgBB(url, apiKey);
-      }));
-    } else if(heroDataUrls.some(u=>u&&u.startsWith('data:'))){
-      toast('⚠️ 圖片未上傳（未填 ImgBB Key），LINE 將無法顯示圖片');
-      await new Promise(r=>setTimeout(r,1800));
+    // 2. 上傳每張完整卡圖到 ImgBB
+    if(!apiKey){
+      throw new Error('未填 ImgBB Key，無法上傳整張卡圖（左側欄頂部設定）');
+    }
+    const fullCardsWithUrl = [];
+    for(let i = 0; i < fullCards.length; i++){
+      toast(`⏳ 上傳第 ${i+1}/${fullCards.length} 張卡片...`);
+      const fc = fullCards[i];
+      const url = await uploadToImgBB(fc.imageDataUrl, apiKey);
+      fullCardsWithUrl.push({...fc, imageUrl: url});
     }
 
-    // 3. 建立 Flex Message
-    const flexMsg = buildJson(finalUrls);
+    // 3. 建立 Flex Message（image-only bubble + overlay box 點擊區）
+    const flexMsg = buildJsonImageOnly(fullCardsWithUrl);
     const msg = {
       type: 'flex',
       altText: G.altText || '請在手機上查看數位版名片。',
