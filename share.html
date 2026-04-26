@@ -590,8 +590,8 @@ function renderCards(state) {
     const htScale = c.heroTitleScale || 1.0;
     const htRotate = c.heroTitleRotate || 0;
     const heroTitleHtml = c.heroTitle ? `
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlignMap[c.heroTitlePos||'center']};padding:0 5%;z-index:3;pointer-events:none;transform:translate(${htX}px,${htY}px)">
-        <div style="font-size:clamp(20px,${heroTitleSizeMap[c.heroTitleSize||'md']},48px);color:${esc(c.heroTitleColor||'#fff')};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${esc(c.heroTitlePos||'center')};text-shadow:0 2px 10px rgba(0,0,0,.4);max-width:100%;word-break:break-word;font-family:${heroFont};transform:rotate(${htRotate}deg) scale(${htScale});transform-origin:center">${esc(c.heroTitle)}</div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlignMap[c.heroTitlePos||'center']};padding:0 5%;z-index:3;pointer-events:none;transform:translate(${htX}px,${htY}px);overflow:visible">
+        <div style="font-size:clamp(20px,${heroTitleSizeMap[c.heroTitleSize||'md']},48px);color:${esc(c.heroTitleColor||'#fff')};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${esc(c.heroTitlePos||'center')};text-shadow:0 2px 10px rgba(0,0,0,.4);white-space:nowrap;font-family:${heroFont};transform:rotate(${htRotate}deg) scale(${htScale});transform-origin:center">${esc(c.heroTitle)}</div>
       </div>
     ` : '';
 
