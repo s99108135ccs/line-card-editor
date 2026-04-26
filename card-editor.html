@@ -21,6 +21,22 @@
   --yellow:#fff8e1;
   --r:12px;
 }
+/* P3-20: Dark mode（body.dark 啟用） */
+body.dark{
+  --bg:#0d0d0d;
+  --white:#1a1a1a;
+  --border:#333;
+  --green-lt:#1a3320;
+  --text:#e8e8e8;
+  --text2:#aaa;
+  --text3:#777;
+  --yellow:#3d2f10;
+}
+body.dark .topbar{box-shadow:0 2px 8px rgba(0,185,0,.5)}
+body.dark .field{background:#1a1a1a !important}
+body.dark .finput, body.dark textarea.finput, body.dark input.finput{background:#222;color:#e8e8e8;border-color:#444}
+body.dark .size-btn, body.dark .av-opt, body.dark .icon-btn{background:#222;color:#ccc;border-color:#444}
+body.dark .size-btn.on, body.dark .av-opt.on{background:var(--green);color:#fff;border-color:var(--green)}
 body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
 /* ─ TOPBAR ─ */
@@ -339,6 +355,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
     LINE 名片製作
   </div>
   <div class="topbar-btns">
+    <button class="tbtn tbtn-outline" onclick="toggleDarkMode()" id="dark-toggle" title="切換深色模式">🌙</button>
     <button class="tbtn tbtn-outline" onclick="openPreview()" id="preview-btn">📡 獨立預覽</button>
     <button class="tbtn tbtn-white" onclick="doCopy()">複製名片 JSON</button>
   </div>
@@ -1889,6 +1906,24 @@ function applyLineDefaultRatio(){
   renderFields(); render();
   toast(`✓ 第 ${G.cur+1} 張改成 20:13（LINE 推薦）`);
 }
+// P3-20: Dark mode toggle（記憶在 localStorage）
+function toggleDarkMode(){
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('line-card:dark', isDark ? '1' : '0');
+  const btn = document.getElementById('dark-toggle');
+  if(btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+// 啟動時還原偏好
+(function initDarkMode(){
+  if(localStorage.getItem('line-card:dark') === '1'){
+    document.body.classList.add('dark');
+    setTimeout(()=>{
+      const btn = document.getElementById('dark-toggle');
+      if(btn) btn.textContent = '☀️';
+    }, 100);
+  }
+})();
 
 // P1-8: 最近發送記錄（LocalStorage，最多 10 筆）
 const RECENT_SHARES_KEY = 'line-card:recent-shares';
@@ -2575,7 +2610,7 @@ function render(){
       <div class="hero-title-wrap" data-card="${i}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:${heroTitleAlign};padding:0 16px;z-index:3;${isCurrent?'cursor:move':'pointer-events:none'};transform:translate(${htX}px,${htY}px)">
         <div class="hero-title-inner" style="position:relative;font-size:${heroTitleSizeMap[c.heroTitleSize]||'26px'};color:${c.heroTitleColor||'#fff'};font-weight:800;letter-spacing:.02em;line-height:1.15;text-align:${heroTitleTextAlign};text-shadow:0 2px 8px rgba(0,0,0,.35);max-width:90%;word-break:break-word;font-family:${heroFontStack(c.heroTitleFont)};user-select:none;transform:rotate(${htRotate}deg) scale(${htScale});transform-origin:center">
           <span style="pointer-events:none">${esc(c.heroTitle)}</span>
-          ${isCurrent ? `<div class="ht-sz-handle" data-card="${i}" style="position:absolute;bottom:-8px;right:-8px;width:14px;height:14px;background:#00b900;border:2.5px solid #fff;border-radius:50%;cursor:nwse-resize;z-index:5;touch-action:none;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="拖曳：縮放 + 旋轉"></div>` : ''}
+          ${isCurrent ? `<div class="ht-sz-handle" data-card="${i}" style="position:absolute;bottom:-10px;right:-10px;width:18px;height:18px;background:#00b900;border:3px solid #fff;border-radius:50%;cursor:nwse-resize;z-index:99;touch-action:none;box-shadow:0 2px 6px rgba(0,0,0,0.4)" title="拖曳：縮放 + 旋轉"></div>` : ''}
         </div>
       </div>
     ` : '';
