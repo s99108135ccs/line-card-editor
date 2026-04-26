@@ -2681,13 +2681,13 @@ function attachHeroTitleDrag(){
         const dy = p.clientY - cy;
         const curDist = Math.hypot(dx, dy);
         const curAngle = Math.atan2(dy, dx);
-        // scale 比例
+        // scale 比例（自由）
         const newScale = Math.max(0.3, Math.min(5.0, origScale * (curDist / startDist || 1)));
-        // 旋轉 delta（弧度 → 度）
-        const newRotate = origRotate + (curAngle - startAngle) * 180 / Math.PI;
+        // 旋轉 snap 到 15° 倍數（避免拖到 32° 47° 這種怪角度）
+        const rawRotate = origRotate + (curAngle - startAngle) * 180 / Math.PI;
+        const snappedRotate = Math.round(rawRotate / 15) * 15;
         c.heroTitleScale = Math.round(newScale * 100) / 100;
-        c.heroTitleRotate = Math.round(newRotate);
-        // 直接更新 transform（不 re-render，避免卡）
+        c.heroTitleRotate = snappedRotate;
         inner.style.transform = `rotate(${c.heroTitleRotate}deg) scale(${c.heroTitleScale})`;
       };
       const endGesture = () => {
