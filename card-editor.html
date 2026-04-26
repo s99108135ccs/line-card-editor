@@ -4288,44 +4288,6 @@ let _autoSaveTimer = null;
 function autoSave(){
   if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(_autoSaveImpl, 600);
-  // 同時排程「自動重發」（5 秒 idle 後）
-  scheduleAutoPublish();
-}
-
-// 自動重發：5 秒 idle 後背景 composeHero + 上傳 ImgBB + 更新 Supabase pendingMsg
-// 只有「已經發布過」的專案才自動重發（沒 projectId → user 還沒按過第一次發布，跳過）
-let _autoPublishTimer = null;
-let _autoPublishing = false;
-function scheduleAutoPublish(){
-  if(_autoPublishTimer) clearTimeout(_autoPublishTimer);
-  _autoPublishTimer = setTimeout(autoPublishToShareLink, 5000);
-}
-async function autoPublishToShareLink(){
-  if(_autoPublishing) return; // 上一次還在跑，跳過
-  const projectId = getProjectId();
-  if(!projectId) return; // 還沒發布過，不自動發
-  const apiKey = (document.getElementById('imgbb-key')?.value||'').trim();
-  if(!apiKey) return; // 沒 ImgBB Key 跳過
-  _autoPublishing = true;
-  try {
-    const heroDataUrls = await Promise.all(G.cards.map(card => composeHero(card)));
-    const finalUrls = await Promise.all(heroDataUrls.map(async (url) => {
-      if(!url || !url.startsWith('data:')) return url;
-      return await uploadToImgBB(url, apiKey);
-    }));
-    const flexMsg = buildJson(finalUrls);
-    const msg = {type:'flex', altText: G.altText || '請在手機上查看數位版名片。', contents: flexMsg.contents};
-    window._pendingMsg = msg;
-    await saveToCloud();
-    window._pendingMsg = null;
-    toast('✓ 已自動同步到分享連結');
-    console.log('[autoPublish] synced');
-  } catch(e){
-    console.warn('[autoPublish] failed', e);
-    // 不擾人 — 失敗就靜默，user 手動按按鈕還能救
-  } finally {
-    _autoPublishing = false;
-  }
 }
 function _autoSaveImpl(){
   try {
