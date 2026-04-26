@@ -420,33 +420,42 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
         </button>
       </div>
     </div>
-    <!-- 自訂顏色 -->
+    <!-- 整體配色（一鍵套用全部卡片） -->
     <div style="padding:12px 16px;border-bottom:1.5px solid var(--border);background:#fff">
-      <div class="flabel" style="margin-bottom:8px">🎨 自訂顏色（全域共用）</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色1</span>
+      <div class="flabel" style="margin-bottom:8px">🎨 整體配色（改了會同步全部卡片）</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
           <input type="color" id="custom-color-0" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
             oninput="setCustomColor(0,this.value)">
-          <span id="cv-custom-0" style="font-size:10px;color:#aaa">#ffffff</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600;color:#444">色1：背景色</div>
+            <div style="font-size:10px;color:#999">套用到所有卡片的名片底色</div>
+          </div>
+          <span id="cv-custom-0" style="font-size:10px;color:#aaa;font-family:monospace">#ffffff</span>
         </div>
-        <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色2</span>
-          <input type="color" id="custom-color-1" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="color" id="custom-color-1" value="#00b900"
+            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
             oninput="setCustomColor(1,this.value)">
-          <span id="cv-custom-1" style="font-size:10px;color:#aaa">#ffffff</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600;color:#444">色2：按鈕顏色</div>
+            <div style="font-size:10px;color:#999">套用到所有按鈕的背景色</div>
+          </div>
+          <span id="cv-custom-1" style="font-size:10px;color:#aaa;font-family:monospace">#00b900</span>
         </div>
-        <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;color:#888">色3</span>
+        <div style="display:flex;gap:8px;align-items:center">
           <input type="color" id="custom-color-2" value="#ffffff"
-            style="width:34px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
+            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
             oninput="setCustomColor(2,this.value)">
-          <span id="cv-custom-2" style="font-size:10px;color:#aaa">#ffffff</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600;color:#444">色3：按鈕文字色</div>
+            <div style="font-size:10px;color:#999">套用到所有按鈕的文字顏色</div>
+          </div>
+          <span id="cv-custom-2" style="font-size:10px;color:#aaa;font-family:monospace">#ffffff</span>
         </div>
       </div>
-      <div class="fhint">設定後會出現在所有顏色選項的第一排，全部卡片共用。</div>
+      <div class="fhint" style="margin-top:6px">這三個色會同步出現在每個顏色選項的第一排（個別卡片仍可獨立調整覆蓋）。</div>
     </div>
 
 
@@ -1041,7 +1050,16 @@ function setCustomColor(idx, hex){
   G.customColors[idx] = hex;
   const cv = document.getElementById('cv-custom-'+idx);
   if(cv) cv.textContent = hex;
-  // 重繪所有 color widget（讓自訂色同步出現）
+  // 同步套用到全部卡片
+  // 色 1 = 背景色 / 色 2 = 按鈕色 / 色 3 = 按鈕文字色
+  if(idx === 0){
+    G.cards.forEach(c => { c.bgColor = hex; });
+  } else if(idx === 1){
+    G.cards.forEach(c => (c.buttons||[]).forEach(b => { b.color = hex; }));
+  } else if(idx === 2){
+    G.cards.forEach(c => (c.buttons||[]).forEach(b => { b.textColor = hex; }));
+  }
+  renderFields();
   render();
 }
 
