@@ -4523,15 +4523,22 @@ function doImport(){
     if(scaling){
       const dx=pt.clientX-scaleSX, dy=pt.clientY-scaleSY;
       const delta=(dx+dy)/2;
-      const avPxMap={sm:38,md:52,lg:68};
-      const bp=avPxMap[(G.cards[scaling.ci].avatarSize||'md')]||52;
+      // 對齊 render() / composeHero 的公式：bp = cardW × sizeRatio[size]
+      const cardW = 300; // .fcard CSS 寬度
+      const sizeRatio = {sm:0.18, md:0.25, lg:0.33};
+      const c = G.cards[scaling.ci];
+      const bp = cardW * (sizeRatio[c.avatarSize||'md']||0.25);
       const ns=Math.max(0.2, Math.min(8, scaleBase+delta/bp));
-      G.cards[scaling.ci].avatarScale=ns;
+      c.avatarScale=ns;
       const w=getWrap(scaling.ci);
       if(w){
-        const px=Math.round(bp*ns);
-        w.style.width=px+'px';
-        w.style.height=px+'px';
+        // 不同 shape 寬高比也要對齊 render()
+        let pxW, pxH;
+        if(c.avatarShape==='portrait'){ pxW=Math.round(bp*0.75*ns); pxH=Math.round(bp*ns); }
+        else if(c.avatarShape==='landscape'){ pxW=Math.round(bp*ns); pxH=Math.round(bp*0.75*ns); }
+        else { pxW=Math.round(bp*ns); pxH=Math.round(bp*ns); }
+        w.style.width=pxW+'px';
+        w.style.height=pxH+'px';
       }
     }
   }
@@ -4545,6 +4552,9 @@ function doImport(){
   function endDrag(){
     if(dragging||scaling){
       dragging=null; scaling=null;
+      // 強制 render 一次，讓拖曳期間直接寫進 DOM 的 inline style 同步回「render 公式」算的真實值
+      // 這樣切卡 / 重新編輯時看到的尺寸跟拖曳時一致，不會「跳到另一個大小」
+      if(typeof render === 'function') render();
       Promise.all(G.cards.map(c=>composeHero(c))).then(urls=>{
         const el=document.getElementById('json-out');
         if(el) el.textContent=JSON.stringify(buildJson(urls),null,2);
