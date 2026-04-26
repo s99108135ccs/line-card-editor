@@ -2778,6 +2778,12 @@ function buildJson(heroDataUrls){
             backgroundColor:c.footerBg||'#ffffff',
             contents:footerContents};
         }
+        // bubble.styles：強制整塊（含 padding + carousel 等高造成的多餘空間）都 cover 同色
+        // separator: false 移除 body/footer 間的分隔線
+        bubble.styles = {
+          body:   {backgroundColor: c.bgColor || '#ffffff'},
+          footer: {backgroundColor: c.footerBg || c.bgColor || '#ffffff', separator: false}
+        };
         return bubble;
       })
     }
