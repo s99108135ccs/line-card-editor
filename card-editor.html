@@ -3880,6 +3880,7 @@ async function showProjects(){
           <div style="font-weight:700;font-size:14px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name||'未命名名片')}${isCurrent?' ✓':''}</div>
           <div style="font-size:11px;color:#999;margin-top:2px">${date}</div>
         </div>
+        <button onclick="event.stopPropagation();copyForkLink('${p.id}')" title="複製分享編輯連結（給客戶建副本）" style="background:none;border:1px solid #b3d8ff;border-radius:6px;cursor:pointer;font-size:14px;color:#1a73e8;padding:5px 8px;line-height:1">🔗</button>
         <button onclick="event.stopPropagation();renameProject('${p.id}','${safeName}')" title="重命名" style="background:none;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:14px;color:#666;padding:5px 8px;line-height:1">✏️</button>
         <button onclick="event.stopPropagation();deleteProject('${p.id}')" title="刪除" style="background:none;border:1px solid #fcc;border-radius:6px;cursor:pointer;font-size:14px;color:#c33;padding:5px 8px;line-height:1">🗑</button>
       </div>`;
@@ -3918,6 +3919,20 @@ async function loadProject(id){
     location.reload();
   } catch(e){
     toast('❌ 載入失敗：' + e.message);
+  }
+}
+
+// 複製「Fork 編輯連結」給客戶 — 客戶開連結會建副本，不會覆蓋你的原版
+function copyForkLink(id){
+  const url = `${location.origin}${location.pathname}?fork=${id}`;
+  // 嘗試 clipboard API，失敗 fallback 到 prompt
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(
+      () => toast('✅ 已複製分享編輯連結'),
+      () => prompt('複製這條連結給客戶（客戶開啟會建副本）：', url)
+    );
+  } else {
+    prompt('複製這條連結給客戶（客戶開啟會建副本）：', url);
   }
 }
 
@@ -4763,9 +4778,47 @@ render = function(){
 };
 
 // INIT
-// 開啟時從 localStorage 還原上次的專案
-(function(){
+// 1. 優先處理 URL ?fork=xxx：從 Supabase 拉那個專案 → 建副本（不會覆蓋原版）
+// 2. 沒有 fork 就從 localStorage 還原上次的專案
+(async function(){
   try {
+    const params = new URLSearchParams(location.search);
+    const forkId = params.get('fork');
+
+    if(forkId){
+      try {
+        setTimeout(()=>toast('⏳ 載入分享的專案...'), 100);
+        // 等 Supabase SDK ready（最多 5 秒）
+        if(typeof supabase === 'undefined'){
+          await new Promise(resolve => {
+            let waited = 0;
+            const t = setInterval(() => {
+              waited += 100;
+              if(typeof supabase !== 'undefined' || waited >= 5000){
+                clearInterval(t);
+                resolve();
+              }
+            }, 100);
+          });
+        }
+        const row = await loadFromCloud(forkId);
+        const state = JSON.parse(row.data);
+        // 自動標示「副本」，避免客戶搞混
+        state.projectName = (state.projectName || '未命名') + ' (副本)';
+        applyProjectState(state);
+        // 關鍵：不繼承 sb_project_id → autoSave 第一次會 insert 新 row（客戶自己的副本）
+        localStorage.removeItem('sb_project_id');
+        // 清掉 URL 上的 ?fork=...，重整就不會再 fork 覆蓋客戶改的東西
+        history.replaceState({}, '', location.pathname);
+        setTimeout(()=>toast('✅ 已建立副本，可以開始編輯'), 500);
+        return;
+      } catch(e){
+        console.warn('fork failed:', e);
+        setTimeout(()=>toast('❌ 載入分享專案失敗：' + e.message), 100);
+        // fallthrough → 走 localStorage 還原
+      }
+    }
+
     const saved = localStorage.getItem(PROJECT_KEY);
     if(saved){
       const state = JSON.parse(saved);
