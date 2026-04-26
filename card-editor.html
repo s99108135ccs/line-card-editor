@@ -2576,12 +2576,32 @@ function buildJson(heroDataUrls){
             {type:'filler'}
           ]};
         if(c.buttons.length){
-          const btnObjs = c.buttons.map(b=>({
-              type:'button',height:BH[G.btnSize],
-              action:{type:'uri',label:b.label||'按鈕',uri:b.link||'https://example.com'},
-              style:b.style,
-              ...(b.style!=='link'?{color:b.color}:{})
-            }));
+          // ⚠️ LINE Flex 的 button 元件不支援 textColor（文字色被鎖死：primary 永遠白字、secondary 黑字）
+          // → 改用 box + text 模擬按鈕，這樣 textColor 才會生效
+          // box 結構：含 action 屬性（讓整個 box 可點）、cornerRadius 圓角、backgroundColor、內含 text 元件
+          const btnPadH = G.btnSize === 'sm' ? '8px' : G.btnSize === 'md' ? '12px' : '14px';
+          const btnTextSize = G.btnSize === 'sm' ? 'sm' : 'md';
+          const btnObjs = c.buttons.map(b=>{
+            const bg = b.style === 'link' ? '#ffffff' : (b.color || '#00b900');
+            const fg = b.textColor || (b.style === 'link' ? (b.color || '#00b900') : '#ffffff');
+            return {
+              type: 'box',
+              layout: 'vertical',
+              backgroundColor: bg,
+              cornerRadius: 'md',
+              paddingAll: btnPadH,
+              action: {type:'uri', label: b.label||'按鈕', uri: b.link||'https://example.com'},
+              contents: [{
+                type: 'text',
+                text: b.label || '按鈕',
+                color: fg,
+                align: 'center',
+                weight: 'bold',
+                size: btnTextSize,
+                wrap: false
+              }]
+            };
+          });
           // btnWidth: half=兩個並排, full=全寬
           let footerContents;
           if(G.btnWidth==='half' && btnObjs.length>1){
