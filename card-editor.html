@@ -1857,13 +1857,11 @@ function syncRatioToAll(){
   renderAll();
   toast(`✓ 全部 ${G.cards.length} 張卡片改成 ${r}`);
 }
-// LINE 推薦比例：20:13（LINE Flex carousel bubble 預設範本用的比例，視覺最 LINE 風）
+// LINE 推薦比例：20:13（只套用當前這一張卡，要全部同步請用「🔄 同步這個比例到所有卡片」）
 function applyLineDefaultRatio(){
-  if(!confirm(`把全部 ${G.cards.length} 張卡片改成 LINE 推薦的 20:13 橫長比例？\n\n這是 LINE Flex 範本的標準比例，看起來最像官方名片。`)) return;
-  G.cards.forEach(c => { c.ratio = '20:13'; });
-  G.ratio = '20:13';
-  renderAll();
-  toast(`✓ 全部 ${G.cards.length} 張卡片改成 20:13（LINE 推薦）`);
+  G.cards[G.cur].ratio = '20:13';
+  renderFields(); render();
+  toast(`✓ 第 ${G.cur+1} 張改成 20:13（LINE 推薦）`);
 }
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
