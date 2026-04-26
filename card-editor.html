@@ -530,10 +530,11 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 
 <!-- ══ 固定發布列（右側底部） ══ -->
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
-  <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'">🚀 發布到 LINE</button>
+  <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'" title="合成圖片 + 上傳雲端 + 產生可貼到 LINE 對話的分享連結">📤 產生分享連結</button>
   <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="複製 JSON 到剪貼簿">📋 複製</button>
   <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
   <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="Supabase 專案列表">📂 專案</button>
+  <button onclick="showRecentShares()" style="padding:13px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="最近發送過的連結">📋 最近</button>
   <button onclick="showDriveModal()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="Google Drive 備份/還原">☁️ Drive</button>
 </div>
 
@@ -1126,16 +1127,16 @@ function renderBrandColors(){
     const cur = G.customColors[s.idx] || '#ffffff';
     return `
       <div style="padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:grid;grid-template-columns:38px 1fr 78px;gap:8px;align-items:center">
           <input type="color" id="custom-color-${s.idx}" value="${cur}"
-            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"
+            style="width:38px;height:30px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px"
             oninput="setCustomColor(${s.idx},this.value)">
-          <div style="flex:1;min-width:0">
+          <div style="min-width:0;overflow:hidden">
             <div style="font-size:12px;font-weight:600;color:#444">${s.name}</div>
-            <div style="font-size:10px;color:#999;line-height:1.3">${s.hint}</div>
+            <div style="font-size:10px;color:#999;line-height:1.3;overflow:hidden;text-overflow:ellipsis">${s.hint}</div>
           </div>
           <input id="cv-custom-${s.idx}" type="text" value="${cur}" maxlength="7"
-            style="width:78px;height:24px;font-size:10px;font-family:monospace;border:1px solid #ddd;border-radius:4px;padding:2px 6px;text-align:center;flex-shrink:0"
+            style="height:24px;font-size:10px;font-family:monospace;border:1px solid #ddd;border-radius:4px;padding:2px 6px;text-align:center"
             onchange="setCustomColorByHex(${s.idx},this.value)"
             onclick="this.select()">
         </div>
@@ -1887,6 +1888,59 @@ function applyLineDefaultRatio(){
   G.cards[G.cur].ratio = '20:13';
   renderFields(); render();
   toast(`✓ 第 ${G.cur+1} 張改成 20:13（LINE 推薦）`);
+}
+
+// P1-8: 最近發送記錄（LocalStorage，最多 10 筆）
+const RECENT_SHARES_KEY = 'line-card:recent-shares';
+function pushRecentShare(projectId, name){
+  try {
+    const raw = localStorage.getItem(RECENT_SHARES_KEY);
+    let list = raw ? JSON.parse(raw) : [];
+    // 同一個 projectId 移到最前面（去重）
+    list = list.filter(r => r.projectId !== projectId);
+    list.unshift({projectId, name, sharedAt: new Date().toISOString()});
+    list = list.slice(0, 10);
+    localStorage.setItem(RECENT_SHARES_KEY, JSON.stringify(list));
+  } catch(e){ console.warn('pushRecentShare failed', e); }
+}
+function getRecentShares(){
+  try {
+    const raw = localStorage.getItem(RECENT_SHARES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+// 顯示「最近發送過」對話框
+function showRecentShares(){
+  const list = getRecentShares();
+  document.getElementById('recent-shares-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'recent-shares-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);font-family:inherit;padding:20px';
+  const rows = list.length ? list.map(r => {
+    const date = new Date(r.sharedAt).toLocaleString('zh-TW', {dateStyle:'short', timeStyle:'short'});
+    const url = `https://liff.line.me/2009436722-02IEHSWP?id=${encodeURIComponent(r.projectId)}`;
+    return `<div style="padding:12px;background:#f9f9f9;border:1px solid #eee;border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-weight:700;font-size:13px;color:#333">${esc(r.name)}</div>
+        <div style="font-size:10px;color:#999">${date}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input type="text" readonly value="${url}" style="flex:1;padding:6px 8px;font-size:10px;font-family:monospace;border:1px solid #ddd;border-radius:4px;background:#fff" onclick="this.select()">
+        <button onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='複製',1500)})" style="padding:6px 12px;background:#06c755;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">複製</button>
+      </div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:#aaa;padding:30px">還沒發送過任何名片</div>';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:800">📋 最近發送過（最多 10 筆）</div>
+        <button onclick="document.getElementById('recent-shares-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#aaa">✕</button>
+      </div>
+      ${rows}
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
@@ -3460,6 +3514,8 @@ async function openOrig(){
       return;
     }
 
+    // P1-8: 記錄到「最近發送」
+    pushRecentShare(projectId, G.projectName || '未命名');
     // 顯示發布結果 dialog（公開連結 + QR + LIFF 分享）
     showPublishResult(projectId, msg);
 
