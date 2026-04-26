@@ -567,11 +567,14 @@ function renderCards(state) {
       </div>`;
 
     // body
+    // text style: align + font（用之前 heroTitle 的 HERO_FONTS 同樣 6 種）
+    const titleStyle = `text-align:${esc(c.titleAlign||'left')};font-family:${HERO_FONTS[c.titleFont]||HERO_FONTS.sans}`;
+    const descStyle  = `text-align:${esc(c.descAlign||'left')};font-family:${HERO_FONTS[c.descFont]||HERO_FONTS.sans}`;
     const titleHtml = c.title
-      ? `<div class="card-title">${esc(c.title)}</div>`
+      ? `<div class="card-title" style="${titleStyle}">${esc(c.title)}</div>`
       : '';
     const descHtml = c.desc
-      ? `<div class="card-desc">${esc(c.desc)}</div>`
+      ? `<div class="card-desc" style="${descStyle}">${esc(c.desc)}</div>`
       : '';
     const bodyHtml = (titleHtml || descHtml)
       ? `<div class="card-body" style="${avatarSrc ? `padding-top:${(av && av.wrapStyle.includes('100px')) ? 56 : 44}px` : ''}">${titleHtml}${descHtml}</div>`

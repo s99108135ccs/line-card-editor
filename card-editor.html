@@ -167,7 +167,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .fcard-hero-empty span{font-size:11px;color:#bbb}
 .fcard-body{padding:11px 10px 8px;text-align:center}
 .fcard-title{font-weight:700;line-height:1.3;word-break:break-word;margin-bottom:4px}
-.fcard-desc{line-height:1.45;word-break:break-word;color:#666;text-align:center}
+.fcard-desc{line-height:1.45;word-break:break-word;color:#666}
 .fcard-footer{padding:0 8px 8px;display:flex;flex-direction:column;gap:5px}
 .fbtn{width:100%;padding:8px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;border:none;font-family:inherit;display:flex;align-items:center;justify-content:center}
 
@@ -1002,7 +1002,11 @@ let G = {
 function newCard(){
   return {
     title:'', titleColor:'#111111',
+    titleAlign: 'left',  // left/center/right/justify
+    titleFont:  'sans',  // sans/serif/kai/brush/cursive/mono
     desc:'', descColor:'#555555',
+    descAlign: 'left',
+    descFont:  'sans',
     ratio: '',  // 每張卡獨立比例（''/null = 用全卡共用 G.ratio）
     link:'', bgColor:'#ffffff',
     bgImgData:'', bgImgUrl:'',
@@ -1449,8 +1453,25 @@ function renderFields(){
     </div>
 
     <div class="field">
-      <div class="flabel">🎨 標題文字顏色</div>
+      <div class="flabel">🎨 標題樣式</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">顏色</div>
       ${mkColorWidget('titleColor'+ci, c.titleColor, TEXT_COLORS, v=>updCard('titleColor',v))}
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">對齊</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">
+        <button class="av-opt${c.titleAlign==='left'?' on':''}" onclick="setTitleAlign('left')" title="靠左">⬅</button>
+        <button class="av-opt${c.titleAlign==='center'?' on':''}" onclick="setTitleAlign('center')" title="置中">═</button>
+        <button class="av-opt${c.titleAlign==='right'?' on':''}" onclick="setTitleAlign('right')" title="靠右">➡</button>
+        <button class="av-opt${c.titleAlign==='justify'?' on':''}" onclick="setTitleAlign('justify')" title="兩端">⇋</button>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">字體</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+        ${HERO_FONT_CHOICES.map(f => `
+          <button class="av-opt${c.titleFont===f.key?' on':''}" onclick="setTitleFont('${f.key}')" style="font-family:${heroFontStack(f.key)};font-size:12px;padding:6px 4px">
+            <div style="font-weight:600">標題</div>
+            <div style="font-size:9px;color:#999;margin-top:1px;font-family:-apple-system,sans-serif;font-weight:400">${f.label}</div>
+          </button>
+        `).join('')}
+      </div>
     </div>
 
     <div class="field">
@@ -1460,8 +1481,25 @@ function renderFields(){
     </div>
 
     <div class="field">
-      <div class="flabel">🎨 說明文字顏色</div>
+      <div class="flabel">🎨 說明文字樣式</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">顏色</div>
       ${mkColorWidget('descColor'+ci, c.descColor, TEXT_COLORS, v=>updCard('descColor',v))}
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">對齊</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">
+        <button class="av-opt${c.descAlign==='left'?' on':''}" onclick="setDescAlign('left')" title="靠左">⬅</button>
+        <button class="av-opt${c.descAlign==='center'?' on':''}" onclick="setDescAlign('center')" title="置中">═</button>
+        <button class="av-opt${c.descAlign==='right'?' on':''}" onclick="setDescAlign('right')" title="靠右">➡</button>
+        <button class="av-opt${c.descAlign==='justify'?' on':''}" onclick="setDescAlign('justify')" title="兩端">⇋</button>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">字體</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+        ${HERO_FONT_CHOICES.map(f => `
+          <button class="av-opt${c.descFont===f.key?' on':''}" onclick="setDescFont('${f.key}')" style="font-family:${heroFontStack(f.key)};font-size:11px;padding:5px 4px">
+            <div style="font-weight:500">說明</div>
+            <div style="font-size:9px;color:#999;margin-top:1px;font-family:-apple-system,sans-serif;font-weight:400">${f.label}</div>
+          </button>
+        `).join('')}
+      </div>
     </div>
 
     <div class="field">
@@ -1663,6 +1701,11 @@ function setHeroTitleFont(v){
   G.cards[G.cur].heroTitleFont = v;
   renderFields(); render();
 }
+// title / desc 對齊 + 字體
+function setTitleAlign(v){ G.cards[G.cur].titleAlign = v; renderFields(); render(); }
+function setTitleFont(v){ G.cards[G.cur].titleFont = v; renderFields(); render(); }
+function setDescAlign(v){ G.cards[G.cur].descAlign = v; renderFields(); render(); }
+function setDescFont(v){ G.cards[G.cur].descFont = v; renderFields(); render(); }
 function resetHeroTitlePos(){
   const c = G.cards[G.cur];
   c.heroTitleX = 0;
@@ -2120,9 +2163,9 @@ function render(){
     div.innerHTML=`
       <div class="fcard-hero" style="padding-top:${hp};background:${isColorMode?'transparent':c.bgColor+'22'};position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
-        ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor}">${esc(c.title)}</div>`
-          :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic">標題...</div>`}
-        ${c.desc?`<div class="fcard-desc" style="font-size:${ds};color:${c.descColor}">${esc(c.desc).replace(/\n/g,'<br>')}</div>`:''}
+        ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor};text-align:${c.titleAlign||'left'};font-family:${heroFontStack(c.titleFont)}">${esc(c.title)}</div>`
+          :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic;text-align:${c.titleAlign||'left'}">標題...</div>`}
+        ${c.desc?`<div class="fcard-desc" style="font-size:${ds};color:${c.descColor};text-align:${c.descAlign||'left'};font-family:${heroFontStack(c.descFont)}">${esc(c.desc).replace(/\n/g,'<br>')}</div>`:''}
       </div>${btnsHtml}`;
     wrap.appendChild(div);
   });
@@ -2236,12 +2279,14 @@ function buildJson(heroDataUrls){
           bubble.hero={type:'image',url:heroSrc,size:'full',aspectMode:'cover',aspectRatio:cardRatio(c),
             ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{})};
         }
+        // CSS align → LINE Flex align mapping（LINE 不支援 justify，fallback 到 start）
+        const lineAlign = (a) => a==='center'?'center' : a==='right'?'end' : 'start';
         bubble.body={type:'box',layout:'vertical',backgroundColor:c.bgColor,
           paddingBottom:'sm',  // A1: 收緊 body 下 padding（減少 carousel 等高造成的空白感）
           ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{}),
           contents:[
-            {type:'text',text:c.title||'（無標題）',weight:'bold',size:G.titleSize,color:c.titleColor,wrap:true},
-            ...(c.desc?[{type:'text',text:c.desc,size:G.descSize,color:c.descColor,wrap:true,margin:'sm'}]:[]),
+            {type:'text',text:c.title||'（無標題）',weight:'bold',size:G.titleSize,color:c.titleColor,wrap:true,align:lineAlign(c.titleAlign||'left')},
+            ...(c.desc?[{type:'text',text:c.desc,size:G.descSize,color:c.descColor,wrap:true,margin:'sm',align:lineAlign(c.descAlign||'left')}]:[]),
             // A1: filler 把多餘空間吃掉，讓 desc 跟 buttons 之間視覺上更緊
             {type:'filler'}
           ]};
@@ -3553,6 +3598,10 @@ function applyProjectState(state){
     if(c.heroTitleX === undefined) c.heroTitleX = 0;
     if(c.heroTitleY === undefined) c.heroTitleY = 0;
     if(c.ratio === undefined) c.ratio = ''; // 舊資料用 G.ratio
+    if(c.titleAlign === undefined) c.titleAlign = 'left';
+    if(c.titleFont === undefined) c.titleFont = 'sans';
+    if(c.descAlign === undefined) c.descAlign = 'left';
+    if(c.descFont === undefined) c.descFont = 'sans';
   });
   // 還原 API Keys
   if(state.apiKeys){
