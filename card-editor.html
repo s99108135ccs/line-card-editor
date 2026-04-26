@@ -2177,20 +2177,13 @@ function composeHero(c){
         else if(c.avatarShape==='landscape'){ avW=baseSz*scaleFactor; avH=baseSz*0.75*scaleFactor; }
         else { avW=baseSz*scaleFactor; avH=baseSz*scaleFactor; }
         const sz=avH; // 用高度代表基準（位置計算用）
-        // ⚠️ 跟 preview 的 avatar 位置對齊：preview 用 bottom:7px、left/right:8px 固定 px
-        // 換算到 canvas 比例：preview 卡寬 210，canvas 卡寬 W → scale = W/210
-        // preview hero 高 = 210 * ratio，canvas hero 高 = H
-        // bottom 7px on preview = 7 * (H / preview_hero_h) on canvas
-        const previewW = 210;
-        const previewHeroH = previewW * (H / W); // 跟 canvas 同 ratio
-        const bottomMargin = 7 * (H / previewHeroH); // preview 7px 換算到 canvas
-        const sideMargin = 8 * (W / previewW); // preview 8px 換算到 canvas
+        const margin=W*0.04;
         // 基礎位置
-        const baseY = H - avH - bottomMargin;
+        const baseY=H-avH-margin;
         let baseX;
-        if(c.avatarPos==='right') baseX = W - avW - sideMargin;
-        else if(c.avatarPos==='center') baseX = (W-avW)/2;
-        else baseX = sideMargin;
+        if(c.avatarPos==='right') baseX=W-avW-margin;
+        else if(c.avatarPos==='center') baseX=(W-avW)/2;
+        else baseX=margin;
         // 套上拖移偏移（預覽卡是210px，輸出是W px，縮放比例）
         const previewW=210;
         const scaleRatio=W/previewW;
