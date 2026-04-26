@@ -1562,15 +1562,21 @@ function renderFields(){
       <div style="margin-top:10px;${c.heroTitle?'':'opacity:.5;pointer-events:none'};padding:8px 10px;background:#f8f8f8;border-radius:6px;font-size:11px">
         <div style="color:#666;margin-bottom:4px">📍 在預覽區直接操作：</div>
         <div style="color:#999;line-height:1.5">
-          • 點住<b>標題文字</b>拖曳 = 移動位置<br>
-          • 點住<b>右下角綠點</b>拖曳 = 縮放 + 旋轉
+          • 點住<b>標題</b>拖曳 = 移動<br>
+          • 點住<b>右下綠點</b>拖曳 = 縮放 + 旋轉（自由角度）
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+          <span style="font-size:10px;color:#666;min-width:42px">旋轉</span>
+          <button onclick="bumpHeroTitleRotate(-15)" style="flex:1;padding:5px;font-size:14px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer" title="逆時針 15°">↺</button>
+          <button onclick="bumpHeroTitleRotate(15)" style="flex:1;padding:5px;font-size:14px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer" title="順時針 15°">↻</button>
+          <button onclick="(()=>{G.cards[G.cur].heroTitleRotate=0;renderFields();render();})()" style="flex:1;padding:5px;font-size:11px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer" title="旋轉歸零">⟲ 回正</button>
         </div>
         <div style="display:flex;gap:6px;margin-top:6px;color:#888;font-size:10px">
           <span>縮放 ${(c.heroTitleScale||1.0).toFixed(2)}x</span>
           <span>·</span>
           <span>旋轉 ${(c.heroTitleRotate||0).toFixed(0)}°</span>
         </div>
-        ${(c.heroTitleX||c.heroTitleY||(c.heroTitleScale&&c.heroTitleScale!==1.0)||(c.heroTitleRotate&&c.heroTitleRotate!==0))?`<button onclick="resetHeroTitlePos()" style="margin-top:6px;width:100%;padding:5px;font-size:10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 全部歸零</button>`:''}
+        ${(c.heroTitleX||c.heroTitleY||(c.heroTitleScale&&c.heroTitleScale!==1.0)||(c.heroTitleRotate&&c.heroTitleRotate!==0))?`<button onclick="resetHeroTitlePos()" style="margin-top:6px;width:100%;padding:5px;font-size:10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer">↺ 全部歸零（位置 + 縮放 + 旋轉）</button>`:''}
       </div>
     </div>
 
