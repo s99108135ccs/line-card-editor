@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINE 名片製作</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=DotGothic16&family=Bebas+Neue&family=Bungee&family=Playfair+Display:wght@700;900&family=Pacifico&family=Permanent+Marker&family=Press+Start+2P&family=VT323&family=Plaster&family=Major+Mono+Display&family=Cinzel:wght@700;900&family=Russo+One&family=Anton&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=DotGothic16&family=Bebas+Neue&family=Bungee&family=Playfair+Display:wght@700;900&family=Pacifico&family=Permanent+Marker&family=Press+Start+2P&family=VT323&family=Plaster&family=Major+Mono+Display&family=Cinzel:wght@700;900&family=Russo+One&family=Anton&family=Caveat:wght@600;700&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;700&family=Jersey+10&family=Tiny5&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1807,6 +1807,10 @@ const HERO_FONT_MAP = {
   // 英文/像素/裝飾字體
   pixel:       "'Press Start 2P', 'VT323', monospace",
   pixel_tall:  "'VT323', 'Press Start 2P', monospace",
+  pixelify:    "'Pixelify Sans', 'Press Start 2P', monospace",
+  silkscreen:  "'Silkscreen', 'Press Start 2P', monospace",
+  jersey:      "'Jersey 10', 'Press Start 2P', monospace",
+  tiny5:       "'Tiny5', 'Press Start 2P', monospace",
   display:     "'Bebas Neue', 'Anton', sans-serif",
   bungee:      "'Bungee', 'Russo One', sans-serif",
   marker:      "'Permanent Marker', 'Caveat', cursive",
@@ -1833,9 +1837,13 @@ const HERO_FONT_CHOICES = [
   {key:'brush',      label:'毛筆',     sample:'視覺 Aa', cat:'中文'},
   {key:'brush2',     label:'草毛筆',   sample:'視覺 Aa', cat:'中文'},
   // 英文 / 裝飾
-  {key:'pixel',      label:'像素風 8-bit', sample:'AaB1', cat:'像素'},
-  {key:'pixel_tall', label:'像素 Mono',    sample:'AaB1', cat:'像素'},
-  {key:'dot_gothic', label:'點陣',         sample:'AaB1', cat:'像素'},
+  {key:'pixel',      label:'8-bit 街機',   sample:'AaB1', cat:'像素'},
+  {key:'pixel_tall', label:'高瘦像素',     sample:'AaB1', cat:'像素'},
+  {key:'pixelify',   label:'Pixelify',     sample:'AaB1', cat:'像素'},
+  {key:'silkscreen', label:'Silkscreen',   sample:'AaB1', cat:'像素'},
+  {key:'jersey',     label:'Jersey',       sample:'AaB1', cat:'像素'},
+  {key:'tiny5',      label:'Tiny5',        sample:'AaB1', cat:'像素'},
+  {key:'dot_gothic', label:'點陣中文',     sample:'AaB1', cat:'像素'},
   {key:'display',    label:'Bebas',        sample:'AaB1', cat:'英文'},
   {key:'anton',      label:'Anton',        sample:'AaB1', cat:'英文'},
   {key:'russo',      label:'Russo',        sample:'AaB1', cat:'英文'},
