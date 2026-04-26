@@ -2959,6 +2959,13 @@ function showPublishResult(projectId, pendingMsg){
         </div>
       </div>
 
+      <!-- 直接傳到 LINE 好友（用 LINE 官方 share URL，不是 LIFF，0 fail） -->
+      <button id="pr-line-share"
+        style="width:100%;padding:13px;background:#06c755;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span style="font-size:16px">💬</span>
+        <span>直接傳到 LINE 好友</span>
+      </button>
+
       <!-- QR Code -->
       <details style="background:#f5f5f7;border-radius:12px;padding:12px 14px;margin-bottom:12px">
         <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#333;user-select:none">📱 QR Code（線下用）</summary>
@@ -2996,6 +3003,15 @@ function showPublishResult(projectId, pendingMsg){
 
   // 點輸入框自動選取
   overlay.querySelector('#pr-url').onclick = (e) => e.target.select();
+
+  // 直接傳到 LINE 好友：用 LINE 官方 share URL（line.me/R/share）
+  // 桌面 → 跳出 LINE 內建分享視窗 / 手機 → 開 LINE 選好友
+  // 這條路是 LINE 自己處理，不像 LIFF shareTargetPicker 會 silent fail
+  overlay.querySelector('#pr-line-share').onclick = () => {
+    const text = `${G.projectName || '我的數位名片'}\n${publicUrl}`;
+    const lineShareUrl = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+    window.open(lineShareUrl, '_blank');
+  };
 
   document.body.appendChild(overlay);
 }
