@@ -487,7 +487,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
           <button class="size-btn on" data-v="md" onclick="pickSize(this,'sz-btn','btnSize')">中</button>
           <button class="size-btn" data-v="lg" onclick="pickSize(this,'sz-btn','btnSize')">大</button>
         </div>
-        <div class="fhint">名片底部按鈕的厚度。</div>
+        <div class="fhint">名片底部按鈕的厚度（文字大小跟著按鈕高度走）。⚠️ LINE 限制：「大」在 LINE 上看起來跟「中」一樣（LINE 只支援兩級）。</div>
       </div>
 
       <div class="field">
@@ -1421,7 +1421,8 @@ function renderFields(){
         }).join('')}
       </div>
       <div class="fhint" style="margin-bottom:6px">改裁切形狀時這個會自動同步。</div>
-      <button onclick="syncRatioToAll()" style="width:100%;padding:7px;font-size:11px;border:1px solid #00b900;background:#f0f8f0;color:#00b900;border-radius:6px;cursor:pointer;margin-bottom:8px;font-weight:600">🔄 同步這個比例到所有卡片（避免 LINE 上有空白）</button>
+      <button onclick="syncRatioToAll()" style="width:100%;padding:7px;font-size:11px;border:1px solid #00b900;background:#f0f8f0;color:#00b900;border-radius:6px;cursor:pointer;margin-bottom:6px;font-weight:600">🔄 同步這個比例到所有卡片（避免 LINE 上有空白）</button>
+      <button onclick="applyLineDefaultRatio()" style="width:100%;padding:7px;font-size:11px;border:1px solid #06c755;background:#06c755;color:#fff;border-radius:6px;cursor:pointer;margin-bottom:8px;font-weight:600">⚡ 一鍵套用 LINE 推薦比例（20:13）</button>
     </div>
 
     <div class="field">
@@ -1854,6 +1855,14 @@ function syncRatioToAll(){
   G.cards.forEach(c => { c.ratio = r; });
   renderAll();
   toast(`✓ 全部 ${G.cards.length} 張卡片改成 ${r}`);
+}
+// LINE 推薦比例：20:13（LINE Flex carousel bubble 預設範本用的比例，視覺最 LINE 風）
+function applyLineDefaultRatio(){
+  if(!confirm(`把全部 ${G.cards.length} 張卡片改成 LINE 推薦的 20:13 橫長比例？\n\n這是 LINE Flex 範本的標準比例，看起來最像官方名片。`)) return;
+  G.cards.forEach(c => { c.ratio = '20:13'; });
+  G.ratio = '20:13';
+  renderAll();
+  toast(`✓ 全部 ${G.cards.length} 張卡片改成 20:13（LINE 推薦）`);
 }
 function setBgMode(mode){
   G.cards[G.cur].bgMode = mode;
