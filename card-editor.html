@@ -3400,9 +3400,23 @@ async function loadFromCloud(projectId){
 // 列出所有專案
 async function listProjects(){
   const sb = getSB();
-  const { data, error } = await sb.from('card').select('id,name,updated_at').order('updated_at', {ascending:false});
+  // P1-10: 拉 data 出來解析 hero 縮圖
+  const { data, error } = await sb.from('card').select('id,name,updated_at,data').order('updated_at', {ascending:false});
   if(error) throw error;
-  return data;
+  // 解析每個 project 的第一張卡 hero URL（給縮圖用）
+  return (data||[]).map(p => {
+    let thumbUrl = '';
+    try {
+      const state = JSON.parse(p.data||'{}');
+      const firstCard = state.cards?.[0];
+      if(firstCard){
+        thumbUrl = firstCard.bgImgUrl || firstCard.bgImgData || firstCard.avatarUrl || firstCard.avatarData || '';
+        // 過濾 placeholder
+        if(thumbUrl === '[本地圖片]' || thumbUrl === '[去背圖片]') thumbUrl = '';
+      }
+    } catch(e){}
+    return {id: p.id, name: p.name, updated_at: p.updated_at, thumbUrl};
+  });
 }
 const LIFF_MSG_KEY = 'liff_pending_msg';
 let liffReady = false;
@@ -3709,9 +3723,13 @@ async function ensureCardsImagesUploaded(){
     return;
   }
 
-  // 沒 Key → 擋下
+  // 沒 Key → 友善提示（P1-9）
   if(!apiKey){
-    throw new Error(`有 ${all.length} 張圖還沒上傳到雲端。請先填「ImgBB Key」（左側欄最上面）`);
+    const goRegister = confirm(`需要 ImgBB Key 才能上傳圖片到雲端（讓 LINE 上看到圖）。\n\n📌 ImgBB 是免費圖床，30 秒註冊\n\n要打開 ImgBB 註冊頁嗎？（會開新分頁）`);
+    if(goRegister){
+      window.open('https://api.imgbb.com/', '_blank');
+    }
+    throw new Error('請先填 ImgBB Key（左側欄頂部「① ImgBB」區塊）');
   }
 
   // 3. 所有 failed 的 → 主動 retry 一次
@@ -3819,7 +3837,12 @@ async function showProjects(){
       const date = new Date(p.updated_at).toLocaleString('zh-TW');
       const isCurrent = p.id === currentId;
       const safeName = String(p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      return `<div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:10px;background:${isCurrent?'#f0f8f0':'#f9f9f9'};border:1.5px solid ${isCurrent?'#00b900':'#eee'};cursor:pointer" onclick="loadProject('${p.id}')">
+      // P1-10: 加 hero 縮圖
+      const thumbHtml = p.thumbUrl
+        ? `<img src="${esc(p.thumbUrl)}" style="width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee">`
+        : `<div style="width:54px;height:54px;border-radius:8px;background:#eee;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:20px;flex-shrink:0">📄</div>`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:${isCurrent?'#f0f8f0':'#f9f9f9'};border:1.5px solid ${isCurrent?'#00b900':'#eee'};cursor:pointer" onclick="loadProject('${p.id}')">
+        ${thumbHtml}
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name||'未命名名片')}${isCurrent?' ✓':''}</div>
           <div style="font-size:11px;color:#999;margin-top:2px">${date}</div>
