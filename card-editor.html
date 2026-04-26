@@ -1109,12 +1109,12 @@ function syncFavoriteDotsUI(){
 
 // 動態 render 整體配色 slot（每個 slot 含 color picker + hex input + 3 個 favorite dot）
 // 注意 idx 不連續（跳過 1），idx=0「背景色」同時 set footerBg + bgColor（合併版）
+// idx=5 (按鈕文字色) 已移除 — LINE Flex button 鎖死文字色，設了沒用
 const BRAND_COLOR_SLOTS = [
   {idx:0, name:'背景色',     hint:'整張卡片底色（標題 + 按鈕後面都套用）'},
   {idx:2, name:'標題文字色', hint:'所有卡片標題的文字顏色'},
   {idx:3, name:'說明文字色', hint:'所有卡片說明文字的顏色'},
-  {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色'},
-  {idx:5, name:'按鈕文字色', hint:'所有按鈕的文字顏色'}
+  {idx:4, name:'按鈕顏色',   hint:'所有按鈕的背景色（文字色 LINE 自動：實心白字 / 灰底深字）'}
 ];
 function renderBrandColors(){
   const wrap = document.getElementById('brand-colors-container');
@@ -1583,20 +1583,10 @@ function renderFields(){
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">顏色</div>
       ${mkColorWidget('titleColor'+ci, c.titleColor, TEXT_COLORS, v=>updCard('titleColor',v))}
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">對齊</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
         <button class="av-opt${c.titleAlign==='left'?' on':''}" onclick="setTitleAlign('left')" title="靠左">⬅</button>
         <button class="av-opt${c.titleAlign==='center'?' on':''}" onclick="setTitleAlign('center')" title="置中">═</button>
         <button class="av-opt${c.titleAlign==='right'?' on':''}" onclick="setTitleAlign('right')" title="靠右">➡</button>
-        <button class="av-opt${c.titleAlign==='justify'?' on':''}" onclick="setTitleAlign('justify')" title="兩端">⇋</button>
-      </div>
-      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">字體</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
-        ${HERO_FONT_CHOICES.map(f => `
-          <button class="av-opt${c.titleFont===f.key?' on':''}" onclick="setTitleFont('${f.key}')" style="font-family:${heroFontStack(f.key)};font-size:12px;padding:6px 4px">
-            <div style="font-weight:600">標題</div>
-            <div style="font-size:9px;color:#999;margin-top:1px;font-family:-apple-system,sans-serif;font-weight:400">${f.label}</div>
-          </button>
-        `).join('')}
       </div>
     </div>
 
@@ -1611,20 +1601,10 @@ function renderFields(){
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">顏色</div>
       ${mkColorWidget('descColor'+ci, c.descColor, TEXT_COLORS, v=>updCard('descColor',v))}
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">對齊</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
         <button class="av-opt${c.descAlign==='left'?' on':''}" onclick="setDescAlign('left')" title="靠左">⬅</button>
         <button class="av-opt${c.descAlign==='center'?' on':''}" onclick="setDescAlign('center')" title="置中">═</button>
         <button class="av-opt${c.descAlign==='right'?' on':''}" onclick="setDescAlign('right')" title="靠右">➡</button>
-        <button class="av-opt${c.descAlign==='justify'?' on':''}" onclick="setDescAlign('justify')" title="兩端">⇋</button>
-      </div>
-      <div style="font-size:11px;font-weight:700;color:var(--text2);margin:8px 0 4px">字體</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
-        ${HERO_FONT_CHOICES.map(f => `
-          <button class="av-opt${c.descFont===f.key?' on':''}" onclick="setDescFont('${f.key}')" style="font-family:${heroFontStack(f.key)};font-size:11px;padding:5px 4px">
-            <div style="font-weight:500">說明</div>
-            <div style="font-size:9px;color:#999;margin-top:1px;font-family:-apple-system,sans-serif;font-weight:400">${f.label}</div>
-          </button>
-        `).join('')}
       </div>
     </div>
 
@@ -2351,10 +2331,7 @@ function renderBtns(ci){
         <div class="field" style="margin-bottom:8px">
           <div class="flabel">🎨 按鈕顏色</div>
           ${mkColorWidget('bc-'+ci+'-'+bi, b.color||'#00b900', BTN_COLORS, v=>updBtn(bi,'color',v))}
-        </div>
-        <div class="field" style="margin-bottom:8px">
-          <div class="flabel">🔤 按鈕文字色</div>
-          ${mkColorWidget('btc-'+ci+'-'+bi, b.textColor||'#ffffff', TEXT_COLORS, v=>updBtn(bi,'textColor',v))}
+          <div class="fhint" style="margin-top:4px;color:#999">⚠️ LINE 限制：按鈕文字色由樣式自動決定（實心 → 白字 / 灰底 → 深字）</div>
         </div>
         <div style="display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--border)">
           <button class="icon-btn" onclick="movBtn(${bi},-1)">↑ 上移</button>
@@ -2432,9 +2409,11 @@ function render(){
     const ds=DSIZEPX[G.descSize]||'11px';
     const bh=BTN_HPX[G.btnSize]||'48px';
 
+    // 按鈕文字色 LINE 鎖死（primary 白 / secondary 深 / link = color）— preview 跟 LINE 一致
     const btnsHtml=c.buttons.length?`<div class="fcard-footer" style="background:${c.footerBg||'#ffffff'}">${c.buttons.map(b=>{
       const bg=b.style==='link'?`background:transparent;color:${b.color||'#00b900'};font-size:11px`
-        :`background:${b.color||'#00b900'};color:${b.textColor||'#fff'}`;
+        :b.style==='secondary'?`background:${b.color||'#f0f0f0'};color:#111`
+        :`background:${b.color||'#00b900'};color:#fff`;
       return `<div class="fbtn" style="${bg};height:${bh}">${esc(b.label)||'按鈕'}</div>`;
     }).join('')}</div>`:'';
 
@@ -2511,9 +2490,9 @@ function render(){
     div.innerHTML=`
       <div class="fcard-hero" style="padding-top:${hp};background:${heroBgPaint};position:relative;overflow:visible">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
-        ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor};text-align:${c.titleAlign||'left'};font-family:${heroFontStack(c.titleFont)}">${esc(c.title)}</div>`
+        ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor};text-align:${c.titleAlign||'left'}">${esc(c.title)}</div>`
           :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic;text-align:${c.titleAlign||'left'}">標題...</div>`}
-        ${c.desc?`<div class="fcard-desc" style="font-size:${ds};color:${c.descColor};text-align:${c.descAlign||'left'};font-family:${heroFontStack(c.descFont)}">${esc(c.desc).replace(/\n/g,'<br>')}</div>`:''}
+        ${c.desc?`<div class="fcard-desc" style="font-size:${ds};color:${c.descColor};text-align:${c.descAlign||'left'}">${esc(c.desc).replace(/\n/g,'<br>')}</div>`:''}
       </div>${btnsHtml}`;
     wrap.appendChild(div);
   });
