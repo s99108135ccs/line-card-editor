@@ -435,6 +435,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="icon-btn" title="往左移" onclick="moveCard(-1)">◀ 往前</button>
         <button class="icon-btn" title="往右移" onclick="moveCard(1)">往後 ▶</button>
+        <button class="icon-btn" title="複製這張卡（含所有內容、樣式、按鈕）— 量產同類型名片必備" onclick="dupCard()" style="background:#0077cc;color:#fff">📋 複製此卡</button>
         <button class="icon-btn" title="把這張的樣式套用到所有卡片（顏色、avatar 設定、footer 顏色）" onclick="syncStyleToAll()" style="background:#06c755;color:#fff">🔄 同步樣式</button>
         <button class="icon-btn danger" onclick="delCard()">刪除</button>
       </div>
@@ -1222,7 +1223,31 @@ function renderTabs(){
   document.getElementById('card-order-info').textContent=
     `現在編輯：第 ${G.cur+1} 張，共 ${G.cards.length} 張`;
 }
-function addCard(){G.cards.push(newCard());G.cur=G.cards.length-1;renderAll()}
+function addCard(){
+  // P0-2: LINE Flex carousel 硬上限 12 張，超過 LINE 後端會 silent drop 整則訊息
+  if(G.cards.length >= 12){
+    alert('⚠️ LINE Flex 名片上限 12 張，超過 LINE 會拒收訊息。\n\n請先刪除其他卡片，或考慮拆成兩個專案分開發送。');
+    return;
+  }
+  G.cards.push(newCard());
+  G.cur=G.cards.length-1;
+  renderAll();
+}
+// P0-1: 複製目前這張卡（含所有設定 + 內容 + 按鈕）
+function dupCard(){
+  if(G.cards.length >= 12){
+    alert('⚠️ LINE Flex 名片上限 12 張，無法再複製。');
+    return;
+  }
+  const src = G.cards[G.cur];
+  if(!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  // 插在當前卡的右邊
+  G.cards.splice(G.cur + 1, 0, copy);
+  G.cur = G.cur + 1;
+  renderAll();
+  toast(`✓ 已複製為第 ${G.cur+1} 張`);
+}
 
 // 把目前選中那張卡的「樣式」套用到所有其他卡片
 // 同步：顏色、avatar 大小/位置/形狀/縮放、footer bg、翻轉
@@ -3648,7 +3673,30 @@ async function ensureCardsImagesUploaded(){
   toast(`✓ 所有圖已上雲端`);
 }
 
+// P0-5: 自動 retry 包裝（指數 backoff 1s/2s/4s）
+async function saveToCloudWithRetry(name, maxRetries = 3){
+  let lastErr;
+  for(let i = 0; i < maxRetries; i++){
+    try {
+      return await saveToCloudOnce(name);
+    } catch(e){
+      lastErr = e;
+      if(i < maxRetries - 1){
+        const delay = 1000 * Math.pow(2, i); // 1s → 2s → 4s
+        console.warn(`[saveToCloud] 失敗，${delay/1000}s 後重試 (${i+1}/${maxRetries})`, e);
+        toast(`⚠️ 儲存失敗，自動重試 ${i+1}/${maxRetries}...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr;
+}
+// 對外接口保持 saveToCloud(name) 不變
 async function saveToCloud(name){
+  return saveToCloudWithRetry(name, 3);
+}
+
+async function saveToCloudOnce(name){
   // 關卡：強制把所有 base64 先上 ImgBB（拒絕儲存爛資料到雲端）
   await ensureCardsImagesUploaded();
 
@@ -3656,7 +3704,6 @@ async function saveToCloud(name){
   if(window._pendingMsg) state.pendingMsg = window._pendingMsg;
   const data = JSON.stringify(state);
 
-  // 警示：如果 state 還是太大，可能是 base64 漏網之魚
   const sizeMB = (data.length / 1024 / 1024).toFixed(2);
   console.log(`[saveToCloud] state size: ${sizeMB}MB`);
   if(data.length > 4 * 1024 * 1024){

@@ -375,7 +375,14 @@ body {
 </div>
 
 <main id="content" hidden>
-  <div class="cards-wrap" id="cards"></div>
+  <div class="cards-wrap" id="cards">
+    <!-- P2-12: Loading spinner（fetchCard 完成後會被取代） -->
+    <div id="loading-spinner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:#888">
+      <div style="width:36px;height:36px;border:3px solid #eee;border-top-color:#06c755;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px"></div>
+      <div style="font-size:13px">載入名片中...</div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
   <div class="powered">
     <a href="https://thetag.tw" target="_blank" rel="noopener">THE TAG · 橫流視覺工作室</a>
   </div>
