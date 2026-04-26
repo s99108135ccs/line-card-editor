@@ -2715,19 +2715,23 @@ function buildJson(heroDataUrls){
       contents:G.cards.map((c,i)=>{
         const bubble={type:'bubble'};
         const heroSrc = heroDataUrls ? heroDataUrls[i] : '';
+        // 整張卡背景色：c.bgColor / c.footerBg 為主，fallback 到整體配色 customColors，最後 fallback white
+        // 全部用同一個 brandBg，確保整張卡 hero/body/footer **全部同色**，不會有色塊不一致
+        const brandBg = c.bgColor || G.customColors?.[1] || G.customColors?.[0] || '#ffffff';
+        const brandFooter = c.footerBg || G.customColors?.[0] || brandBg;
+        console.log(`[buildJson] card ${i+1} bg=${brandBg} footer=${brandFooter}`);
         if(heroSrc){
           bubble.hero={type:'image',url:heroSrc,size:'full',aspectMode:'cover',aspectRatio:cardRatio(c),
             ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{})};
         }
         // CSS align → LINE Flex align mapping（LINE 不支援 justify，fallback 到 start）
         const lineAlign = (a) => a==='center'?'center' : a==='right'?'end' : 'start';
-        bubble.body={type:'box',layout:'vertical',backgroundColor:c.bgColor,
-          paddingBottom:'sm',  // A1: 收緊 body 下 padding（減少 carousel 等高造成的空白感）
+        bubble.body={type:'box',layout:'vertical',backgroundColor:brandBg,
+          paddingBottom:'sm',
           ...(c.link?{action:{type:'uri',label:'view',uri:c.link}}:{}),
           contents:[
             {type:'text',text:c.title||'（無標題）',weight:'bold',size:G.titleSize,color:c.titleColor,wrap:true,align:lineAlign(c.titleAlign||'left')},
             ...(c.desc?[{type:'text',text:c.desc,size:G.descSize,color:c.descColor,wrap:true,margin:'sm',align:lineAlign(c.descAlign||'left')}]:[]),
-            // A1: filler 把多餘空間吃掉，讓 desc 跟 buttons 之間視覺上更緊
             {type:'filler'}
           ]};
         if(c.buttons.length){
@@ -2774,15 +2778,22 @@ function buildJson(heroDataUrls){
             footerContents=btnObjs;
           }
           bubble.footer={type:'box',layout:'vertical',spacing:'sm',paddingAll:'8px',
-            paddingTop:'sm',  // A1: 收緊 footer 上 padding
-            backgroundColor:c.footerBg||'#ffffff',
-            contents:footerContents};
+            paddingTop:'sm',
+            backgroundColor:brandFooter,
+            // 末尾加 filler 吃掉 carousel 等高拉伸的多餘空間（不會留底色不一致的條）
+            contents:[...footerContents, {type:'filler'}]};
+        } else {
+          // 沒按鈕時也建一個空 footer（純色塊），確保整張卡視覺連續
+          bubble.footer={type:'box',layout:'vertical',paddingAll:'sm',
+            backgroundColor:brandFooter,
+            contents:[{type:'filler'}]};
         }
-        // bubble.styles：強制整塊（含 padding + carousel 等高造成的多餘空間）都 cover 同色
-        // separator: false 移除 body/footer 間的分隔線
+        // bubble.styles 強制整塊（含 carousel 等高拉伸 padding）cover 同色
+        // 同時移除 body/footer 間的 separator 細線
         bubble.styles = {
-          body:   {backgroundColor: c.bgColor || '#ffffff'},
-          footer: {backgroundColor: c.footerBg || c.bgColor || '#ffffff', separator: false}
+          hero:   {backgroundColor: brandBg, separator: false},
+          body:   {backgroundColor: brandBg, separator: false},
+          footer: {backgroundColor: brandFooter, separator: false}
         };
         return bubble;
       })
