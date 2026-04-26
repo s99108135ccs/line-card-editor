@@ -177,7 +177,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .card-pill-delete:hover{transform:scale(1.2);background:#c62828}
 .fcard.sel{border-color:var(--green)}
 .fcard:hover{transform:translateY(-2px)}
-.fcard-hero{width:100%;position:relative;overflow:visible;background:#e0e0e0}
+.fcard-hero{width:100%;position:relative;overflow:hidden;background:#e0e0e0}
 .fcard-hero img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
 .fcard-hero-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#aaa;font-size:24px;gap:4px}
 .fcard-hero-empty span{font-size:11px;color:#bbb}
@@ -249,7 +249,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 .img-reedit-btn:hover{background:rgba(0,0,0,.85)}
 
 /* 大頭照在 hero 裡的疊層 */
-.hero-stack{position:relative;width:100%;overflow:visible;background:#e0e0e0}
+.hero-stack{position:relative;width:100%;overflow:hidden;background:#e0e0e0}
 .hero-stack-bg{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
 .hero-stack-av{position:absolute;bottom:8px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);object-fit:cover;display:block}
 .hero-stack-av.shape-circle{border-radius:50%}
@@ -2609,7 +2609,7 @@ function render(){
       ? 'transparent'
       : (bgSrc ? 'transparent' : (c.bgColor || '#ffffff'));
     div.innerHTML=`
-      <div class="fcard-hero" style="padding-top:${hp};background:${heroBgPaint};position:relative;overflow:visible">${heroContent}</div>
+      <div class="fcard-hero" style="padding-top:${hp};background:${heroBgPaint};position:relative;overflow:hidden">${heroContent}</div>
       <div class="fcard-body" style="background:${c.bgColor}">
         ${c.title?`<div class="fcard-title" style="font-size:${ts};color:${c.titleColor};text-align:${c.titleAlign||'left'}">${esc(c.title)}</div>`
           :`<div class="fcard-title" style="font-size:${ts};color:#ccc;font-style:italic;text-align:${c.titleAlign||'left'}">標題...</div>`}
