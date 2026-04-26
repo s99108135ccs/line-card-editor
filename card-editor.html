@@ -493,7 +493,8 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
       <div class="field">
         <div class="flabel">↔️ 按鈕寬度</div>
         <div class="size-row" id="sz-btnw">
-          <button class="size-btn" data-v="half" onclick="pickSize(this,'sz-btnw','btnWidth')">½ 並排</button>
+          <button class="size-btn" data-v="half" onclick="pickSize(this,'sz-btnw','btnWidth')">1/2 並排</button>
+          <button class="size-btn" data-v="twoThird" onclick="pickSize(this,'sz-btnw','btnWidth')">2/3 寬</button>
           <button class="size-btn on" data-v="full" onclick="pickSize(this,'sz-btnw','btnWidth')">全寬</button>
         </div>
         <div class="fhint">全寬：每個按鈕佔滿一整行。½ 並排：兩個按鈕並排。</div>
@@ -2772,7 +2773,7 @@ function buildJson(heroDataUrls){
               }]
             };
           });
-          // btnWidth: half=兩個並排, full=全寬
+          // btnWidth: half=兩個並排 / twoThird=2/3 寬置中 / full=全寬
           let footerContents;
           if(G.btnWidth==='half' && btnObjs.length>1){
             // 每兩個包成一個 horizontal box
@@ -2785,6 +2786,16 @@ function buildJson(heroDataUrls){
                 footerContents.push(pair[0]);
               }
             }
+          } else if(G.btnWidth==='twoThird'){
+            // 2/3 寬置中：每顆按鈕包進 horizontal box，兩側用 filler 留 1/6 空白（合計 2/6 = 1/3）
+            footerContents = btnObjs.map(btn => ({
+              type: 'box', layout: 'horizontal', spacing: 'none',
+              contents: [
+                {type: 'filler', flex: 1},
+                {...btn, flex: 4},
+                {type: 'filler', flex: 1}
+              ]
+            }));
           } else {
             footerContents=btnObjs;
           }
