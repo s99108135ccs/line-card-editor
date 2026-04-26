@@ -548,10 +548,8 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 <!-- ══ 固定發布列（右側底部） ══ -->
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
   <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'" title="合成圖片 + 上傳雲端 + 產生可貼到 LINE 對話的分享連結">📤 產生分享連結</button>
-  <button onclick="doCopy()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="複製 JSON 到剪貼簿">📋 複製</button>
   <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
   <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="Supabase 專案列表">📂 專案</button>
-  <button onclick="showRecentShares()" style="padding:13px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="最近發送過的連結">📋 最近</button>
   <button onclick="showDriveModal()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="Google Drive 備份/還原">☁️ Drive</button>
 </div>
 
