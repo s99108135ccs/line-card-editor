@@ -2539,21 +2539,24 @@ function render(){
     }).join('')}</div>`:'';
 
     // hero: build layered preview inline
-    // 大頭照尺寸用固定px（預覽卡寬210px，避免aspect-ratio在absolute定位失效）
-    const avPxMap={sm:38,md:52,lg:68};
-    const avPxBase=avPxMap[c.avatarSize||'md'];
-    const avScale=c.avatarScale||1.0;
-    // 根據 avatarShape 決定寬高
+    // 公式對齊 composeHero canvas（cardW=300px = .fcard CSS 寬，跟 LINE PNG 比例同步）
+    const cardW = 300;
+    const sizeRatio = {sm:0.18, md:0.25, lg:0.33};
+    const avBase = cardW * (sizeRatio[c.avatarSize||'md']);
+    const avScale = c.avatarScale||1.0;
+    // 根據 avatarShape 決定寬高（跟 canvas L2176-78 同公式）
     let avW, avH;
-    if(c.avatarShape==='portrait'){ avW=Math.round(avPxBase*0.75*avScale); avH=Math.round(avPxBase*avScale); }
-    else if(c.avatarShape==='landscape'){ avW=Math.round(avPxBase*avScale); avH=Math.round(avPxBase*0.75*avScale); }
-    else { avW=Math.round(avPxBase*avScale); avH=Math.round(avPxBase*avScale); }
-    const avScaledPx=avH; // 保留給其他地方用
+    if(c.avatarShape==='portrait'){ avW=Math.round(avBase*0.75*avScale); avH=Math.round(avBase*avScale); }
+    else if(c.avatarShape==='landscape'){ avW=Math.round(avBase*avScale); avH=Math.round(avBase*0.75*avScale); }
+    else { avW=Math.round(avBase*avScale); avH=Math.round(avBase*avScale); }
+    const avScaledPx=avH;
+    // margin 跟 canvas L2180 同：cardW × 0.04 = 12px
+    const avMargin = Math.round(cardW * 0.04);
     // 基礎位置（拖移前），用 transform 疊加偏移
     let avBaseLeft, avBaseRight='auto', avTransform='';
-    if(c.avatarPos==='right'){avBaseLeft='auto';avBaseRight='8px';}
+    if(c.avatarPos==='right'){avBaseLeft='auto';avBaseRight=`${avMargin}px`;}
     else if(c.avatarPos==='center'){avBaseLeft='50%';avTransform='translateX(-50%)';}
-    else{avBaseLeft='8px';}
+    else{avBaseLeft=`${avMargin}px`;}
     const avX=c.avatarX||0, avY=c.avatarY||0;
     const avShapeStyle=c.avatarShape==='circle'?`border-radius:50%`
       :c.avatarShape==='rounded'?`border-radius:20%`:`border-radius:4px`;
@@ -2564,7 +2567,7 @@ function render(){
     if(avRotate) imgTransforms.push(`rotate(${avRotate}deg)`);
     const avatarEl=avSrc?`
       <div class="av-wrap" data-card="${i}"
-        style="position:absolute;bottom:7px;left:${avBaseLeft};right:${avBaseRight};width:${avW}px;height:${avH}px;z-index:2;touch-action:none;cursor:move;transform:${avTransform} translate(${avX}px,${avY}px)">
+        style="position:absolute;bottom:${avMargin}px;left:${avBaseLeft};right:${avBaseRight};width:${avW}px;height:${avH}px;z-index:2;touch-action:none;cursor:move;transform:${avTransform} translate(${avX}px,${avY}px)">
         <img src="${avSrc}" class="av-draggable" data-card="${i}"
           style="width:100%;height:100%;${avShapeStyle};object-fit:cover;display:block;pointer-events:none;user-select:none;${imgTransforms.length?`transform:${imgTransforms.join(' ')};`:''}">
         <div class="av-sz-handle" data-card="${i}"
