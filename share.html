@@ -810,7 +810,17 @@ async function initLiffOptional() {
   }
 }
 
+// Watchdog: 8 秒後若還在 loading，強制顯示診斷 + 重整提示
+let _mainStage = 'init';
+setTimeout(() => {
+  const loading = $('#loading');
+  if (loading && !loading.hidden) {
+    showError('載入卡住（停在「' + _mainStage + '」）— 請強制重整（Cmd+Shift+R）或換瀏覽器試。LINE App 內建瀏覽器 cache 太舊也會這樣。');
+  }
+}, 8000);
+
 (async function main() {
+  _mainStage = 'getCardId';
   const id = getCardId();
   if (!id) {
     showError('URL 缺少名片 ID（share.html?id=xxxx）');
@@ -818,8 +828,10 @@ async function initLiffOptional() {
   }
 
   // LIFF init 先（決定 isInClient 才 render）
+  _mainStage = 'liff init';
   await initLiffOptional();
 
+  _mainStage = 'fetchCard';
   let state;
   try {
     const { state: s } = await fetchCard(id);
@@ -834,13 +846,15 @@ async function initLiffOptional() {
     return;
   }
 
+  _mainStage = 'renderCards';
   try {
     renderCards(state);
     $('#loading').hidden = true;
     $('#content').hidden = false;
+    _mainStage = 'done';
   } catch(e){
     console.error('renderCards 失敗', e);
-    showError('渲染名片失敗：' + (e.message || e));
+    showError('渲染名片失敗：' + (e.message || e) + '\n\n（' + (e.stack||'').slice(0,200) + '）');
   }
 })();
 </script>
