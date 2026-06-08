@@ -235,14 +235,12 @@ body {
 
 /* Utility row (CONTACT / COPY / SHARE / LINE) */
 .card-utility {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  padding: 8px 16px 16px;
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px 16px;
   border-top: 1px solid var(--line);
   margin-top: 4px;
 }
-.card-utility.has-line { grid-template-columns: repeat(4, 1fr); }
 .util-btn {
   display: flex;
   align-items: center;
@@ -272,6 +270,9 @@ body {
   background: var(--text);
   color: var(--card-bg);
   border-color: var(--text);
+  min-width: 200px;
+  padding: 12px 36px;
+  font-size: 13px;
 }
 .util-btn.line-btn:hover { background: #333; }
 .util-btn.hidden { display: none; }
@@ -538,9 +539,7 @@ function renderCards(state) {
   // 每張卡片獨立比例：c.ratio 優先，沒設用全卡共用 state.ratio
   const cardRatioStr = (c) => parseRatio(c.ratio || state.ratio);
 
-  // 偵測 LINE 環境：在 LINE 內顯示 LINE button
-  const showLineBtn = (typeof liff !== 'undefined' && liff.isInClient?.()) ? true : false;
-
+  
   const wrap = $('#cards');
   wrap.innerHTML = cards.map((c, i) => {
     const heroInfo = getHero(i, c);
@@ -658,11 +657,8 @@ function renderCards(state) {
       : '';
 
     // 卡片內 utility row（CONTACT / COPY / SHARE / 在 LINE 內顯示 LINE）
-    const utilHtml = `<div class="card-utility ${showLineBtn ? 'has-line' : ''}">
-      <button class="util-btn" data-act="vcard" data-card-idx="${i}">+ Contact</button>
-      <button class="util-btn" data-act="copy" data-card-idx="${i}">+ Copy</button>
-      <button class="util-btn" data-act="share" data-card-idx="${i}">+ Share</button>
-      ${showLineBtn ? `<button class="util-btn line-btn" data-act="line" data-card-idx="${i}">+ LINE</button>` : ''}
+    const utilHtml = `<div class="card-utility">
+      <button class="util-btn line-btn" data-act="line" data-card-idx="${i}">+ LINE</button>
     </div>`;
 
     return `<article class="card">
