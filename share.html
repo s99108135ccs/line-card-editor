@@ -217,10 +217,6 @@ body {
 }
 .card-btn:hover { filter: brightness(1.08); }
 .card-btn:active { transform: scale(.98); }
-.card-btn .arrow {
-  font-weight: 600;
-  opacity: .85;
-}
 .card-btn.style-primary {
   /* color comes from inline style (b.color) */
 }
@@ -233,7 +229,7 @@ body {
   /* color comes from inline style */
 }
 
-/* Utility row (CONTACT / COPY / SHARE / LINE) */
+/* ═══ Utility row (LINE share) ═══ */
 .card-utility {
   display: flex;
   justify-content: center;
@@ -241,18 +237,19 @@ body {
   border-top: 1px solid var(--line);
   margin-top: 4px;
 }
-.util-btn {
+.util-btn.line-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 10px 6px;
-  background: transparent;
-  border: 1px solid var(--line-strong);
+  background: var(--text);
+  color: var(--card-bg);
+  border: 1px solid var(--text);
   border-radius: 8px;
-  color: var(--text);
+  min-width: 200px;
+  padding: 12px 36px;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: .02em;
   cursor: pointer;
@@ -260,22 +257,8 @@ body {
   text-transform: uppercase;
   line-height: 1;
 }
-.util-btn:hover {
-  background: var(--text);
-  color: var(--card-bg);
-  border-color: var(--text);
-}
-.util-btn:active { transform: scale(.96); }
-.util-btn.line-btn {
-  background: var(--text);
-  color: var(--card-bg);
-  border-color: var(--text);
-  min-width: 200px;
-  padding: 12px 36px;
-  font-size: 13px;
-}
 .util-btn.line-btn:hover { background: #333; }
-.util-btn.hidden { display: none; }
+.util-btn.line-btn:active { transform: scale(.96); }
 
 /* Toast */
 .toast {
@@ -312,53 +295,6 @@ body {
 }
 .powered a { color: inherit; text-decoration: none; }
 .powered a:hover { color: var(--text); }
-
-/* QR modal */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 100;
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s;
-}
-.modal-overlay.show { opacity: 1; pointer-events: auto; }
-.modal {
-  background: var(--card-bg);
-  border-radius: 14px;
-  padding: 28px 24px;
-  max-width: 320px;
-  width: 100%;
-  text-align: center;
-  transform: scale(.95);
-  transition: transform .2s;
-}
-.modal-overlay.show .modal { transform: scale(1); }
-.modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.modal p { color: var(--text2); font-size: 12px; margin-bottom: 16px; }
-.modal img.qr {
-  width: 200px; height: 200px;
-  background: #fff;
-  padding: 8px;
-  margin: 0 auto 14px;
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-.modal-close {
-  background: var(--text);
-  border: none;
-  color: var(--card-bg);
-  padding: 10px 24px;
-  border-radius: 100px;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-}
-.modal-close:hover { background: #333; }
 </style>
 </head>
 <body>
@@ -381,12 +317,10 @@ body {
 
 <main id="content" hidden>
   <div class="cards-wrap" id="cards">
-    <!-- P2-12: Loading spinner（fetchCard 完成後會被取代） -->
     <div id="loading-spinner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:#888">
       <div style="width:36px;height:36px;border:3px solid #eee;border-top-color:#06c755;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px"></div>
       <div style="font-size:13px">載入名片中...</div>
     </div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
   </div>
   <div class="powered">
     <a href="https://thetag.tw" target="_blank" rel="noopener">THE TAG · 橫流視覺工作室</a>
@@ -394,15 +328,6 @@ body {
 </main>
 
 <div class="toast" id="toast"></div>
-
-<div class="modal-overlay" id="qr-modal">
-  <div class="modal">
-    <h3>掃 QR Code</h3>
-    <p>用手機開啟</p>
-    <img class="qr" id="qr-img" src="" alt="QR Code">
-    <button class="modal-close" onclick="closeQR()">關閉</button>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -482,7 +407,6 @@ function getAvatarStyle(c) {
   else if (c.avatarShape === 'landscape') { w = baseSize * scale; h = baseSize * 0.75 * scale; }
   else { w = baseSize * scale; h = baseSize * scale; }
 
-  // 位置（疊在 hero 左下、中下、右下）
   const margin = 12;
   let pos = '';
   if (c.avatarPos === 'right') {
@@ -492,7 +416,6 @@ function getAvatarStyle(c) {
   } else {
     pos = `left: ${margin}px;`;
   }
-  // 預設疊在 hero 底部，部分超出 hero 邊界
   pos += `bottom: -${h * 0.25}px;`;
 
   let shape = c.avatarShape || 'circle';
@@ -518,10 +441,7 @@ function renderCards(state) {
   }
 
   const pendingCards = state.pendingMsg?.contents?.contents || [];
-  // 過濾 card-editor 的 '[本地圖片]' placeholder（非真 URL）
   const isValidUrl = (s) => s && typeof s === 'string' && (s.startsWith('http') || s.startsWith('data:'));
-  // 回傳 {url, alreadyHasAvatar}
-  // alreadyHasAvatar=true 表示這張 hero 是 LINE 用的合成圖（內含 avatar），share.html 不該再疊一個
   const getHero = (idx, card) => {
     const fromPending = pendingCards[idx]?.hero?.url;
     if (isValidUrl(fromPending)) return {url: fromPending, alreadyHasAvatar: true};
@@ -536,21 +456,16 @@ function renderCards(state) {
   };
 
   const defaultRatio = parseRatio(state.ratio);
-  // 每張卡片獨立比例：c.ratio 優先，沒設用全卡共用 state.ratio
   const cardRatioStr = (c) => parseRatio(c.ratio || state.ratio);
 
-  
   const wrap = $('#cards');
   wrap.innerHTML = cards.map((c, i) => {
     const heroInfo = getHero(i, c);
     const heroUrl = heroInfo.url;
     const avatarSrc = getAvatar(c);
-    // share.html 永遠不渲染 avatar overlay（hero 圖內已燒進 avatar）
-    // 避免「合成圖內 avatar + share.html 又疊一個」的兩個 avatar 問題
     const shouldRenderAvatarOverlay = false;
     const av = null;
 
-    // hero 區：純色 / 圖片 / 沒圖（fallback 用 bgColor 整體背景）
     const isColorMode = c.bgMode === 'color';
     const heroBgStyle = isColorMode
       ? `background-color:${esc(c.bgSolidColor || '#0d0d0d')};`
@@ -559,7 +474,6 @@ function renderCards(state) {
           : `background-color:${esc(c.bgColor || '#ffffff')};`);
     const heroFlipClass = (!isColorMode && c.bgFlipX) ? ' flip' : '';
 
-    // hero 標題（疊在背景上，字體 + 偏移）
     const HERO_FONTS = {
       sans:        "'Noto Sans TC', -apple-system, sans-serif",
       serif:       "'Noto Serif TC', serif",
@@ -590,7 +504,6 @@ function renderCards(state) {
     };
     const heroTitleSizeMap = {sm:'5vw', md:'7vw', lg:'10vw'};
     const heroTitleAlignMap = {left:'flex-start', center:'center', right:'flex-end'};
-    // 用戶在 editor 拖曳的偏移（base preview 寬 210px，share 卡寬 ~520px → 縮放）
     const SHARE_PREVIEW_W = 520, EDITOR_PREVIEW_W = 210;
     const offsetScale = SHARE_PREVIEW_W / EDITOR_PREVIEW_W;
     const htX = (c.heroTitleX || 0) * offsetScale;
@@ -609,8 +522,6 @@ function renderCards(state) {
         ${heroTitleHtml}
       </div>`;
 
-    // body
-    // text style: align + font（用之前 heroTitle 的 HERO_FONTS 同樣 6 種）
     const titleStyle = `text-align:${esc(c.titleAlign||'left')};font-family:${HERO_FONTS[c.titleFont]||HERO_FONTS.sans}`;
     const descStyle  = `text-align:${esc(c.descAlign||'left')};font-family:${HERO_FONTS[c.descFont]||HERO_FONTS.sans}`;
     const titleHtml = c.title
@@ -623,7 +534,6 @@ function renderCards(state) {
       ? `<div class="card-body">${titleHtml}${descHtml}</div>`
       : '';
 
-    // 用戶設定的 buttons（全寬長條，保留用戶顏色）
     const userBtnsHtml = (c.buttons || []).map(b => {
       const label = b.label || '按鈕';
       const link = b.link || '#';
@@ -656,7 +566,6 @@ function renderCards(state) {
       ? `<div class="card-buttons" style="background:${esc(c.footerBg || '#fff')}">${userBtnsHtml}</div>`
       : '';
 
-    // 卡片內 utility row（CONTACT / COPY / SHARE / 在 LINE 內顯示 LINE）
     const utilHtml = `<div class="card-utility">
       <button class="util-btn line-btn" data-act="line" data-card-idx="${i}">+ LINE</button>
     </div>`;
@@ -676,22 +585,16 @@ function renderCards(state) {
     });
   });
 
-  // utility button bind
-  wrap.querySelectorAll('.util-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const act = btn.dataset.act;
-      if (act === 'vcard') downloadVCard(state);
-      else if (act === 'copy') copyLink();
-      else if (act === 'share') shareLink(state);
-      else if (act === 'line') sendToLine(state);
-    });
+  // LINE button bind
+  wrap.querySelectorAll('.util-btn.line-btn').forEach(btn => {
+    btn.addEventListener('click', () => sendToLine(state));
   });
 
   // OG tags
   const c0 = cards[0];
   const firstTitle = c0?.title || state.projectName || '數位名片';
   const firstDesc = c0?.desc || state.altText || 'THE TAG 數位名片';
-  const firstImg = getHero(0, c0).url;  // getHero 現在回 object，取 .url
+  const firstImg = getHero(0, c0).url;
   document.title = firstTitle + ' · 數位名片';
   document.querySelector('meta[property="og:title"]').content = firstTitle;
   document.querySelector('meta[property="og:description"]').content = firstDesc.slice(0, 120);
@@ -700,87 +603,23 @@ function renderCards(state) {
   }
 }
 
-function buildVCard(state) {
-  const cards = state.cards || [];
-  const c = cards[0] || {};
-  const name = c.title || state.projectName || '數位名片';
-  const desc = c.desc || '';
+/* ─── LINE 分享（含權限錯誤重新授權） ─── */
 
-  const buttons = cards.flatMap(cc => cc.buttons || []);
-  const tels = [], emails = [], urls = [];
-  for (const b of buttons) {
-    const link = b.link || '';
-    if (link.startsWith('tel:')) tels.push(link.slice(4));
-    else if (link.startsWith('mailto:')) emails.push(link.slice(7));
-    else if (/^https?:\/\//.test(link)) urls.push(link);
-  }
-  for (const cc of cards) {
-    if (cc.link && /^https?:\/\//.test(cc.link) && !urls.includes(cc.link)) urls.push(cc.link);
-  }
-
-  const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
-  lines.push('FN:' + name);
-  if (desc) lines.push('NOTE:' + desc.replace(/\n/g, '\\n'));
-  tels.forEach(t => lines.push('TEL;TYPE=CELL:' + t));
-  emails.forEach(e => lines.push('EMAIL:' + e));
-  urls.forEach(u => lines.push('URL:' + u));
-  lines.push('END:VCARD');
-  return lines.join('\r\n');
+function doReauth() {
+  // 清除登入狀態，重新走 LIFF login 以觸發權限再授權畫面
+  try { liff.logout(); } catch (e) { /* ignore */ }
+  liff.login({ redirectUri: location.href });
 }
-
-function downloadVCard(state) {
-  const vcf = buildVCard(state);
-  const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const name = (state.cards?.[0]?.title || state.projectName || 'contact').replace(/[^\w一-龥\-]/g, '_');
-  a.href = url;
-  a.download = name + '.vcf';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  toast('通訊錄已下載');
-}
-
-async function copyLink() {
-  try {
-    await navigator.clipboard.writeText(location.href);
-    toast('連結已複製');
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = location.href;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); toast('連結已複製'); }
-    catch { toast('複製失敗'); }
-    ta.remove();
-  }
-}
-
-async function shareLink(state) {
-  const title = state.cards?.[0]?.title || '數位名片';
-  const text = state.altText || '請查看數位名片';
-  if (navigator.share) {
-    try {
-      await navigator.share({ title, text, url: location.href });
-    } catch (e) {
-      if (e.name !== 'AbortError') toast('分享失敗：' + e.message);
-    }
-  } else {
-    showQR(location.href);
-  }
-}
-
-function showQR(url) {
-  $('#qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=' + encodeURIComponent(url);
-  $('#qr-modal').classList.add('show');
-}
-window.closeQR = function() { $('#qr-modal').classList.remove('show'); };
 
 async function sendToLine(state) {
-  if (typeof liff === 'undefined') { toast('LINE SDK 未載入'); return; }
+  if (typeof liff === 'undefined') {
+    // LIFF SDK 沒載入 → fallback 用 LINE URL scheme 分享純文字連結
+    window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
+    return;
+  }
   try {
     if (!liff.isApiAvailable('shareTargetPicker')) {
+      // 不在 LINE 內或 API 不可用 → fallback 到 LINE URL scheme
       window.location.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(location.href);
       return;
     }
@@ -790,8 +629,15 @@ async function sendToLine(state) {
     const res = await liff.shareTargetPicker([msg]);
     if (res?.status === 'success') toast('分享成功');
   } catch (e) {
-    console.error(e);
-    toast('分享失敗：' + e.message);
+    console.error('sendToLine error:', e);
+    const errMsg = String(e.message || e);
+    // 權限不足 → 重新登入授權
+    if (errMsg.includes('permission') || errMsg.includes('grant')) {
+      toast('需要授權，正在重新登入…');
+      setTimeout(doReauth, 800);
+      return;
+    }
+    toast('分享失敗：' + errMsg);
   }
 }
 
@@ -799,12 +645,6 @@ async function initLiffOptional() {
   if (typeof liff === 'undefined') return;
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: false });
-    if (liff.isInClient() && liff.isApiAvailable?.('shareTargetPicker')) {
-      // 重新 render 一次以加入 LINE button
-      window._showLineBtn = true;
-      // 簡單方式：直接顯示所有 hidden line-btn
-      // (renderCards 已根據 isInClient 判斷)
-    }
   } catch (e) {
     console.warn('LIFF init skipped:', e.message);
   }
@@ -827,7 +667,6 @@ setTimeout(() => {
     return;
   }
 
-  // LIFF init 先（決定 isInClient 才 render）
   _mainStage = 'liff init';
   await initLiffOptional();
 
