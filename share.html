@@ -313,6 +313,7 @@ body {
   <div class="error-mark">🔍</div>
   <div class="error-title" id="error-title">找不到名片</div>
   <div class="error-msg" id="error-msg">連結可能已失效。</div>
+  <button id="retry-btn" hidden onclick="location.reload()" style="margin-top:16px;padding:10px 28px;border:none;border-radius:8px;background:#06c755;color:#fff;font-size:15px;font-weight:600;cursor:pointer">重新載入</button>
 </div>
 
 <main id="content" hidden>
@@ -377,18 +378,31 @@ function showError(msg) {
   $('#error').hidden = false;
 }
 
-async function fetchCard(id) {
+async function fetchCard(id, attempt) {
+  attempt = attempt || 1;
   const sb = supabase.createClient(SB_URL, SB_KEY);
-  const { data: row, error } = await sb.from('card').select('*').eq('id', id).single();
-  if (error) throw error;
-  if (!row) throw new Error('找不到名片資料');
-  let state;
   try {
-    state = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+    const { data: row, error } = await sb.from('card').select('*').eq('id', id).single();
+    if (error) throw error;
+    if (!row) throw new Error('找不到名片資料');
+    let state;
+    try {
+      state = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+    } catch (e) {
+      throw new Error('資料格式錯誤：' + e.message);
+    }
+    return { row, state };
   } catch (e) {
-    throw new Error('資料格式錯誤：' + e.message);
+    const msg = String(e.message || e);
+    const isNetwork = (e instanceof TypeError) || /Failed to fetch|NetworkError|net::ERR/i.test(msg);
+    if (isNetwork && attempt < 4) {
+      const lt = $('.loading-text');
+      if (lt) lt.textContent = '雲端喚醒中（第 ' + attempt + ' 次重試）…';
+      await new Promise(r => setTimeout(r, 4000));
+      return fetchCard(id, attempt + 1);
+    }
+    throw e;
   }
-  return { row, state };
 }
 
 function parseRatio(r) {
@@ -677,10 +691,16 @@ setTimeout(() => {
     state = s;
   } catch (e) {
     console.error(e);
-    if (String(e.message || e).includes('Row not found') || e.code === 'PGRST116') {
+    const msg = String(e.message || e);
+    if (msg.includes('Row not found') || e.code === 'PGRST116') {
       showError('找不到這張名片，可能已被刪除');
+    } else if ((e instanceof TypeError) || /Failed to fetch|NetworkError|net::ERR/i.test(msg)) {
+      $('#error-title').textContent = '雲端服務休眠中';
+      showError('名片資料庫正在喚醒，通常需要 30～60 秒。請稍後點下方按鈕重試。');
+      $('#retry-btn').hidden = false;
     } else {
       showError('載入失敗：' + (e.message || '請稍後再試'));
+      $('#retry-btn').hidden = false;
     }
     return;
   }
