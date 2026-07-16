@@ -374,15 +374,54 @@ function toast(msg) {
 function showError(msg) {
   $('#loading').hidden = true;
   $('#content').hidden = true;
+  $('#retry-btn').hidden = true;
   if (msg) $('#error-msg').textContent = msg;
   $('#error').hidden = false;
 }
 
-async function fetchCard(id, attempt) {
+function showContent() {
+  $('#loading').hidden = true;
+  $('#error').hidden = true;
+  $('#retry-btn').hidden = true;
+  $('#content').hidden = false;
+}
+
+const FETCH_RETRY_WINDOW_MS = 75000;
+const FETCH_RETRY_DELAY_MS = 5000;
+const FETCH_ATTEMPT_TIMEOUT_MS = 12000;
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function isNetworkError(error) {
+  const msg = String(error?.message || error);
+  return error instanceof TypeError || /Failed to fetch|NetworkError|net::ERR|timeout|逾時/i.test(msg);
+}
+
+async function withTimeout(promise, timeoutMs) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('資料庫連線逾時')), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchCard(id, startedAt, attempt) {
+  startedAt = startedAt || Date.now();
   attempt = attempt || 1;
   const sb = supabase.createClient(SB_URL, SB_KEY);
   try {
-    const { data: row, error } = await sb.from('card').select('*').eq('id', id).single();
+    const remaining = FETCH_RETRY_WINDOW_MS - (Date.now() - startedAt);
+    if (remaining <= 0) throw new Error('資料庫連線逾時');
+    const { data: row, error } = await withTimeout(
+      sb.from('card').select('*').eq('id', id).single(),
+      Math.min(FETCH_ATTEMPT_TIMEOUT_MS, remaining)
+    );
     if (error) throw error;
     if (!row) throw new Error('找不到名片資料');
     let state;
@@ -393,13 +432,13 @@ async function fetchCard(id, attempt) {
     }
     return { row, state };
   } catch (e) {
-    const msg = String(e.message || e);
-    const isNetwork = (e instanceof TypeError) || /Failed to fetch|NetworkError|net::ERR/i.test(msg);
-    if (isNetwork && attempt < 4) {
+    const remaining = FETCH_RETRY_WINDOW_MS - (Date.now() - startedAt);
+    if (isNetworkError(e) && remaining > 0) {
       const lt = $('.loading-text');
-      if (lt) lt.textContent = '雲端喚醒中（第 ' + attempt + ' 次重試）…';
-      await new Promise(r => setTimeout(r, 4000));
-      return fetchCard(id, attempt + 1);
+      const waited = Math.floor((Date.now() - startedAt) / 1000);
+      if (lt) lt.textContent = '雲端喚醒中（已等待 ' + waited + ' 秒，持續嘗試中）…';
+      await sleep(Math.min(FETCH_RETRY_DELAY_MS, remaining));
+      return fetchCard(id, startedAt, attempt + 1);
     }
     throw e;
   }
@@ -664,14 +703,7 @@ async function initLiffOptional() {
   }
 }
 
-// Watchdog: 8 秒後若還在 loading，強制顯示診斷 + 重整提示
 let _mainStage = 'init';
-setTimeout(() => {
-  const loading = $('#loading');
-  if (loading && !loading.hidden) {
-    showError('載入卡住（停在「' + _mainStage + '」）— 請強制重整（Cmd+Shift+R）或換瀏覽器試。LINE App 內建瀏覽器 cache 太舊也會這樣。');
-  }
-}, 8000);
 
 (async function main() {
   _mainStage = 'getCardId';
@@ -694,9 +726,9 @@ setTimeout(() => {
     const msg = String(e.message || e);
     if (msg.includes('Row not found') || e.code === 'PGRST116') {
       showError('找不到這張名片，可能已被刪除');
-    } else if ((e instanceof TypeError) || /Failed to fetch|NetworkError|net::ERR/i.test(msg)) {
+    } else if (isNetworkError(e)) {
       $('#error-title').textContent = '雲端服務休眠中';
-      showError('名片資料庫正在喚醒，通常需要 30～60 秒。請稍後點下方按鈕重試。');
+      showError('名片資料庫已持續嘗試連線 75 秒，仍未回應。請稍後點下方按鈕重新載入。');
       $('#retry-btn').hidden = false;
     } else {
       showError('載入失敗：' + (e.message || '請稍後再試'));
@@ -708,8 +740,7 @@ setTimeout(() => {
   _mainStage = 'renderCards';
   try {
     renderCards(state);
-    $('#loading').hidden = true;
-    $('#content').hidden = false;
+    showContent();
     _mainStage = 'done';
   } catch(e){
     console.error('renderCards 失敗', e);
