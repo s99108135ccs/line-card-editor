@@ -547,7 +547,7 @@ textarea.finput{resize:vertical;min-height:80px;line-height:1.6}
 
 <!-- ══ 固定發布列（右側底部） ══ -->
 <div id="publish-bar" style="position:fixed;bottom:0;right:0;width:calc(100% - 340px);background:rgba(255,255,255,0.97);backdrop-filter:blur(10px);border-top:1.5px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px;z-index:95;box-shadow:0 -4px 24px rgba(0,0,0,.1)">
-  <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'" title="合成圖片 + 上傳雲端 + 產生可貼到 LINE 對話的分享連結">📤 產生分享連結</button>
+  <button onclick="openOrig()" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#008f00'" onmouseout="this.style.background='#00b900'" title="合成圖片、儲存名片後，直接選擇 LINE 好友或群組發送">＋ LINE 分享給好友</button>
   <button onclick="doCloudSave()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #00b900;background:#f0f8f0;color:#00b900;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="儲存到雲端">☁️ 雲端存檔</button>
   <button onclick="showProjects()" style="padding:13px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" title="Supabase 專案列表">📂 專案</button>
   <button onclick="showDriveModal()" style="padding:13px 18px;border-radius:10px;border:1.5px solid #4285f4;background:#fff;color:#4285f4;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="Google Drive 備份/還原">☁️ Drive</button>
@@ -3503,8 +3503,9 @@ window.addEventListener('load', async function(){
       toast('❌ 找不到名片 ID，請重新點選「發布到 LINE」');
       return;
     }
-    // 登入完回來 → 直接顯示發布結果 dialog（含複製連結 + QR + 可選 LIFF 分享）
-    showPublishResult(storedPid, msg);
+    // 登入完回來 → 直接開 LINE 收件人選擇器；不支援時才顯示連結備援。
+    const shared = await shareToLineFriends(storedPid, msg);
+    if(!shared) showPublishResult(storedPid, msg);
   } catch(e){ console.warn('LIFF load check failed:', e.message); }
 });
 
@@ -3561,8 +3562,9 @@ async function openOrig(){
 
     // P1-8: 記錄到「最近發送」
     pushRecentShare(projectId, G.projectName || '未命名');
-    // 顯示發布結果 dialog（公開連結 + QR + LIFF 分享）
-    showPublishResult(projectId, msg);
+    // 直接開 LINE 收件人選擇器；無法使用時才改顯示連結與 QR Code。
+    const shared = await shareToLineFriends(projectId, msg);
+    if(!shared) showPublishResult(projectId, msg);
 
   } catch(err){
     console.error(err);
@@ -3572,7 +3574,39 @@ async function openOrig(){
 }
 
 // ══════════════════════════════════════════
-//  發布結果 Dialog（公開連結 + QR + LIFF 分享）
+//  直接傳到 LINE 好友；僅在不支援時交給公開連結／QR Code 備援
+// ══════════════════════════════════════════
+async function shareToLineFriends(projectId, msg){
+  if(typeof liff === 'undefined' || !liff.isApiAvailable('shareTargetPicker')){
+    return false;
+  }
+  try{
+    toast('📤 選擇要分享的 LINE 好友…');
+    const result = await liff.shareTargetPicker([msg]);
+    if(result?.status === 'success'){
+      toast('✅ 名片已發送！');
+    } else {
+      toast('ℹ️ 已取消分享');
+    }
+    return true;
+  } catch(e){
+    console.warn('LINE direct share failed:', e.message);
+    const message = String(e?.message || e);
+    if(/permission|grant|required permissions/i.test(message)){
+      localStorage.setItem(LIFF_MSG_KEY, JSON.stringify(msg));
+      localStorage.setItem('liff_project_id', projectId);
+      toast('需要 LINE 授權，正在重新登入…');
+      try { liff.logout(); } catch(_) {}
+      liff.login({ redirectUri: location.href });
+      return true;
+    }
+    toast('LINE 直接分享暫時不可用，改用連結備援');
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════
+//  發布結果 Dialog（公開連結 + QR + LINE 備援）
 // ══════════════════════════════════════════
 function buildPublicUrl(projectId){
   // 用 LIFF URL 包裝（taichunmin 那招）：
@@ -3588,8 +3622,7 @@ function showPublishResult(projectId, pendingMsg){
   const publicUrl = buildPublicUrl(projectId);
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + encodeURIComponent(publicUrl);
 
-  // 注：LIFF 直接傳 LINE 按鈕已移除（外部瀏覽器 shareTargetPicker 不穩定，對方常收不到）
-  // 公開連結是唯一可靠路徑
+  // 這是非 LINE 環境或直接分享失敗時的備援；主流程已在上方直接開啟收件人選擇器。
 
   const overlay = document.createElement('div');
   overlay.id = 'publish-result-overlay';
@@ -3619,11 +3652,11 @@ function showPublishResult(projectId, pendingMsg){
         </div>
       </div>
 
-      <!-- 直接傳到 LINE 好友（用 LINE 官方 share URL，不是 LIFF，0 fail） -->
+      <!-- 直接傳到 LINE 好友（LINE 外部環境備援） -->
       <button id="pr-line-share"
         style="width:100%;padding:13px;background:#06c755;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
         <span style="font-size:16px">💬</span>
-        <span>直接傳到 LINE 好友</span>
+        <span>＋ LINE 分享給好友</span>
       </button>
 
       <!-- QR Code -->
