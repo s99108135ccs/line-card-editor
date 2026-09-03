@@ -984,6 +984,7 @@ const BTN_COLORS = [
 // ══════════════════════════════════════════
 let G = {
   projectName:'未命名名片',
+  hideTheTagBranding:false,
   altText:'請在手機上查看數位版名片。',
   ratio:'20:13',
   customColors:['#ffffff','#ffffff','#111111','#555555','#00b900','#ffffff'],
@@ -4383,6 +4384,7 @@ function getProjectState(){
     version: 2,
     savedAt: new Date().toISOString(),
     projectName: G.projectName || '未命名名片',
+    hideTheTagBranding: G.hideTheTagBranding === true,
     altText: G.altText,
     ratio: G.ratio,
     titleSize: G.titleSize,
@@ -4403,6 +4405,8 @@ function getProjectState(){
 function applyProjectState(state){
   if(!state || !state.cards) throw new Error('格式錯誤');
   G.projectName = state.projectName || '未命名名片';
+  // 保留每張名片的品牌識別設定，避免客戶名片下次編輯時恢復 THE TAG 頁首/頁尾。
+  G.hideTheTagBranding = state.hideTheTagBranding === true;
   G.altText = state.altText || '';
   G.ratio = state.ratio || '20:13';
   G.titleSize = state.titleSize || 'md';

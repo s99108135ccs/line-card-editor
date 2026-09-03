@@ -299,7 +299,7 @@ body {
 </head>
 <body>
 
-<header class="nav">
+<header class="nav" id="site-brand">
   <div class="nav-mark">THE TAG</div>
   <div class="nav-meta">DIGITAL CARD</div>
 </header>
@@ -323,7 +323,7 @@ body {
       <div style="font-size:13px">載入名片中...</div>
     </div>
   </div>
-  <div class="powered">
+  <div class="powered" id="site-credit">
     <a href="https://thetag.tw" target="_blank" rel="noopener">THE TAG · 橫流視覺工作室</a>
   </div>
 </main>
@@ -646,7 +646,7 @@ function renderCards(state) {
   // OG tags
   const c0 = cards[0];
   const firstTitle = c0?.title || state.projectName || '數位名片';
-  const firstDesc = c0?.desc || state.altText || 'THE TAG 數位名片';
+  const firstDesc = c0?.desc || state.altText || (state.hideTheTagBranding ? '數位名片' : 'THE TAG 數位名片');
   const firstImg = getHero(0, c0).url;
   document.title = firstTitle + ' · 數位名片';
   document.querySelector('meta[property="og:title"]').content = firstTitle;
@@ -654,6 +654,13 @@ function renderCards(state) {
   if (firstImg && typeof firstImg === 'string' && firstImg.startsWith('http')) {
     document.querySelector('meta[property="og:image"]').content = firstImg;
   }
+}
+
+// 每張名片可單獨決定是否顯示平台識別；預設維持 THE TAG，不影響既有名片。
+function applyBranding(state) {
+  const hideBranding = state?.hideTheTagBranding === true;
+  $('#site-brand').hidden = hideBranding;
+  $('#site-credit').hidden = hideBranding;
 }
 
 /* ─── LINE 分享（含權限錯誤重新授權） ─── */
@@ -739,6 +746,7 @@ let _mainStage = 'init';
 
   _mainStage = 'renderCards';
   try {
+    applyBranding(state);
     renderCards(state);
     showContent();
     _mainStage = 'done';
