@@ -3528,8 +3528,9 @@ async function openOrig(){
         return await uploadToImgBB(url, apiKey);
       }));
     } else if(heroDataUrls.some(u=>u&&u.startsWith('data:'))){
-      toast('⚠️ 圖片未上傳（未填 ImgBB Key），LINE 將無法顯示圖片');
-      await new Promise(r=>setTimeout(r,1800));
+      // LINE Flex 的 image.url 必須是公開 HTTPS URL；把 canvas data URL 存進
+      // pendingMsg 會讓整包名片暴增數 MB，且 LINE 也無法正確載入。
+      throw new Error('發布前需要 ImgBB Key，才能把合成圖片上傳成公開網址。請填入 Key 後再發布。');
     }
 
     // 3. 建立 Flex Message（hero + body + footer 經典結構）
@@ -3811,6 +3812,24 @@ async function ensureCardsImagesUploaded(){
   toast(`✓ 所有圖已上雲端`);
 }
 
+// 雲端資料只能引用公開圖片網址，絕不把 data:image;base64 寫進 Supabase。
+// 回傳路徑只供錯誤訊息使用，不輸出任何圖片內容。
+function findInlineImageData(value, path = 'state', matches = []){
+  if(typeof value === 'string'){
+    if(/^data:image\//i.test(value)) matches.push(path);
+    return matches;
+  }
+  if(Array.isArray(value)){
+    value.forEach((item, index) => findInlineImageData(item, `${path}[${index}]`, matches));
+  } else if(value && typeof value === 'object'){
+    Object.entries(value).forEach(([key, item]) => findInlineImageData(item, `${path}.${key}`, matches));
+  }
+  return matches;
+}
+
+// 8MB 是非圖片設定資料的硬上限；正常名片在圖片改用 URL 後應遠低於此值。
+const CLOUD_PAYLOAD_LIMIT_BYTES = 8 * 1024 * 1024;
+
 // P0-5: 自動 retry 包裝（指數 backoff 1s/2s/4s）
 async function saveToCloudWithRetry(name, maxRetries = 3){
   let lastErr;
@@ -3819,6 +3838,7 @@ async function saveToCloudWithRetry(name, maxRetries = 3){
       return await saveToCloudOnce(name);
     } catch(e){
       lastErr = e;
+      if(e && e.nonRetryable) throw e;
       if(i < maxRetries - 1){
         const delay = 1000 * Math.pow(2, i); // 1s → 2s → 4s
         console.warn(`[saveToCloud] 失敗，${delay/1000}s 後重試 (${i+1}/${maxRetries})`, e);
@@ -3840,12 +3860,22 @@ async function saveToCloudOnce(name){
 
   const state = getProjectState();
   if(window._pendingMsg) state.pendingMsg = window._pendingMsg;
+
+  // 第二道防線：編輯器圖片以外，發布時新產生的 Flex hero 圖也不能是 base64。
+  const inlineImagePaths = findInlineImageData(state);
+  if(inlineImagePaths.length > 0){
+    const err = new Error(`有 ${inlineImagePaths.length} 張圖片尚未上傳成公開網址（${inlineImagePaths.slice(0, 3).join('、')}）。請確認 ImgBB 上傳完成後再發布。`);
+    err.nonRetryable = true;
+    throw err;
+  }
   const data = JSON.stringify(state);
 
   const sizeMB = (data.length / 1024 / 1024).toFixed(2);
   console.log(`[saveToCloud] state size: ${sizeMB}MB`);
-  if(data.length > 4 * 1024 * 1024){
-    throw new Error(`雲端資料過大（${sizeMB}MB），可能有 base64 沒清乾淨。請告訴開發者。`);
+  if(data.length > CLOUD_PAYLOAD_LIMIT_BYTES){
+    const err = new Error(`雲端資料過大（${sizeMB}MB，限制 8MB）。圖片已排除後仍超限，請縮短文字內容或聯絡開發者。`);
+    err.nonRetryable = true;
+    throw err;
   }
 
   const sb = getSB();
