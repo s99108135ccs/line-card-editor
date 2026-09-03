@@ -3504,8 +3504,10 @@ window.addEventListener('load', async function(){
       return;
     }
     // 登入完回來 → 直接開 LINE 收件人選擇器；不支援時才顯示連結備援。
-    const shared = await shareToLineFriends(storedPid, msg);
-    if(!shared) showPublishResult(storedPid, msg);
+    const shareResult = await shareToLineFriends(storedPid, msg);
+    // 直接分享到好友後也要保留可複製的公開連結；只有重新登入時不顯示，
+    // 避免登入跳轉被視窗中斷。
+    if(shareResult !== 'reauth') showPublishResult(storedPid, msg);
   } catch(e){ console.warn('LIFF load check failed:', e.message); }
 });
 
@@ -3564,8 +3566,9 @@ async function openOrig(){
     // P1-8: 記錄到「最近發送」
     pushRecentShare(projectId, G.projectName || '未命名');
     // 直接開 LINE 收件人選擇器；無法使用時才改顯示連結與 QR Code。
-    const shared = await shareToLineFriends(projectId, msg);
-    if(!shared) showPublishResult(projectId, msg);
+    const shareResult = await shareToLineFriends(projectId, msg);
+    // 無論 LINE picker 是否可用，名片已存到雲端後都提供公開連結可複製。
+    if(shareResult !== 'reauth') showPublishResult(projectId, msg);
 
   } catch(err){
     console.error(err);
@@ -3579,7 +3582,7 @@ async function openOrig(){
 // ══════════════════════════════════════════
 async function shareToLineFriends(projectId, msg){
   if(typeof liff === 'undefined' || !liff.isApiAvailable('shareTargetPicker')){
-    return false;
+    return 'fallback';
   }
   try{
     toast('📤 選擇要分享的 LINE 好友…');
@@ -3589,7 +3592,7 @@ async function shareToLineFriends(projectId, msg){
     } else {
       toast('ℹ️ 已取消分享');
     }
-    return true;
+    return 'complete';
   } catch(e){
     console.warn('LINE direct share failed:', e.message);
     const message = String(e?.message || e);
@@ -3599,10 +3602,10 @@ async function shareToLineFriends(projectId, msg){
       toast('需要 LINE 授權，正在重新登入…');
       try { liff.logout(); } catch(_) {}
       liff.login({ redirectUri: location.href });
-      return true;
+      return 'reauth';
     }
     toast('LINE 直接分享暫時不可用，改用連結備援');
-    return false;
+    return 'fallback';
   }
 }
 
